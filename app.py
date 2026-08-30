@@ -31,9 +31,13 @@ LAYOUT = """
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 70px; }
 
-        header { background: #0f111a; height: 55px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; position: sticky; top: 0; z-index: 1000; }
-        .logo { font-size: 18px; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: 0.5px; }
+        header { background: #0f111a; height: 60px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 12px; position: sticky; top: 0; z-index: 1000; gap: 8px; }
+        .logo { font-size: 16px; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: 0.5px; flex-shrink: 0; }
         .logo span { color: var(--accent-red); }
+
+        .search-form { display: flex; align-items: center; background: #1a1d29; border: 1px solid var(--border-color); border-radius: 20px; padding: 4px 10px; flex-grow: 1; max-width: 200px; }
+        .search-form input { background: transparent; border: none; color: #fff; font-size: 12px; width: 100%; outline: none; }
+        .search-form button { background: transparent; border: none; color: #888; cursor: pointer; font-size: 12px; }
 
         .player-container { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; }
         iframe { width: 100%; height: 100%; border: 0; }
@@ -71,13 +75,17 @@ LAYOUT = """
 <body>
     <header>
         <a href="/" class="logo">LUCIFER <span>DONGHUA</span></a>
+        <form class="search-form" action="/search" method="get">
+            <input type="text" name="q" placeholder="Search donghua..." required>
+            <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+        </form>
     </header>
 
     {{ content | safe }}
 
     <nav class="bottom-nav">
-        <a href="/" class="nav-item active"><i class="fa-solid fa-house"></i>Home</a>
-        <a href="/" class="nav-item"><i class="fa-solid fa-film"></i>Anime</a>
+        <a href="/" class="nav-item {{ 'active' if active_nav == 'home' else '' }}"><i class="fa-solid fa-house"></i>Home</a>
+        <a href="/anime" class="nav-item {{ 'active' if active_nav == 'anime' else '' }}"><i class="fa-solid fa-film"></i>Anime List</a>
     </nav>
 
     <script>
@@ -94,35 +102,69 @@ LAYOUT = """
 </html>
 """
 
+def parse_cards(soup):
+    cards_html = ""
+    for article in soup.find_all(['article', 'div'], class_=re.compile(r'bsx|item|article|post', re.I)):
+        link = article.find('a')
+        img = article.find('img')
+        title = article.find(['h2', 'h3', 'h4']) or link
+        if link and title:
+            t_text = title.get_text(strip=True)
+            href = link.get('href', '')
+            src = img.get('data-src') or img.get('src') or '' if img else ''
+            cards_html += f'''
+            <a href="/watch?url={href}" class="card">
+                <div class="card-img-wrap">
+                    <img src="{src}" alt="{t_text}">
+                    <div class="card-badge">HD</div>
+                </div>
+                <div class="card-title">{t_text}</div>
+            </a>
+            '''
+    return cards_html
+
 @app.route('/')
 def index():
-    cards_html = ""
     try:
         res = requests.get("https://luciferdonghua.in/", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(res.text, 'html.parser')
-        
-        for article in soup.find_all('article'):
-            link = article.find('a')
-            img = article.find('img')
-            title = article.find('h2') or article.find('h3') or link
-            if link and title:
-                t_text = title.get_text(strip=True)
-                href = link.get('href', '')
-                src = img.get('data-src') or img.get('src') or '' if img else ''
-                cards_html += f'''
-                <a href="/watch?url={href}" class="card">
-                    <div class="card-img-wrap">
-                        <img src="{src}">
-                        <div class="card-badge">LD</div>
-                    </div>
-                    <div class="card-title">{t_text}</div>
-                </a>
-                '''
+        cards_html = parse_cards(soup)
     except Exception as e:
-        cards_html = f"<p style='padding:15px;'>Error: {e}</p>"
+        cards_html = f"<p style='padding:15px; color:#888;'>Error loading content: {e}</p>"
 
     content = f'<div class="grid-3" style="margin-top:10px;">{cards_html}</div>'
-    return render_template_string(LAYOUT, title="Home", content=content)
+    return render_template_string(LAYOUT, title="Home", content=content, active_nav="home")
+
+@app.route('/anime')
+def anime_list():
+    try:
+        res = requests.get("https://luciferdonghua.in/series/", headers=HEADERS, timeout=10)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        cards_html = parse_cards(soup)
+    except Exception as e:
+        cards_html = f"<p style='padding:15px; color:#888;'>Error loading series list: {e}</p>"
+
+    content = f'<div class="grid-3" style="margin-top:10px;">{cards_html}</div>'
+    return render_template_string(LAYOUT, title="Anime List", content=content, active_nav="anime")
+
+@app.route('/search')
+def search():
+    query = request.args.get('q', '')
+    cards_html = ""
+    if query:
+        try:
+            search_url = f"https://luciferdonghua.in/?s={query}"
+            res = requests.get(search_url, headers=HEADERS, timeout=10)
+            soup = BeautifulSoup(res.text, 'html.parser')
+            cards_html = parse_cards(soup)
+        except Exception as e:
+            cards_html = f"<p style='padding:15px; color:#888;'>Search failed: {e}</p>"
+
+    if not cards_html:
+        cards_html = "<p style='padding:15px; color:#888;'>No results found.</p>"
+
+    content = f'<div style="padding:10px 10px 0 10px; font-size:12px; font-weight:bold;">Search results for: "{query}"</div><div class="grid-3" style="margin-top:10px;">{cards_html}</div>'
+    return render_template_string(LAYOUT, title=f"Search: {query}", content=content, active_nav="")
 
 @app.route('/watch')
 def watch():
@@ -141,43 +183,23 @@ def watch():
             if h1:
                 title = h1.get_text(strip=True)
 
-            # Extract raw URL strings using broad pattern matching across all JS variables
+            # 1. Regex search for embed providers
             matches = re.findall(r'(https?://[^\s"\'<>]+)', html_text)
             for raw in matches:
                 url = raw.replace('\\/', '/').replace('&amp;', '&')
-                
-                # Filter strictly for video hosting players
                 if any(k in url for k in ['rumble.com/embed', 'dailymotion.com/embed', 'ok.ru/videoembed', 'vidhide', 'luluvdo', 'streamtape']):
                     if not any(s['url'] == url for s in servers):
-                        if 'rumble' in url: name = "Server 2 (Rumble 4K)"
-                        elif 'dailymotion' in url: name = "Server 1 (Dailymotion)"
-                        elif 'ok.ru' in url: name = "Server 3 (OK.ru)"
-                        elif 'vidhide' in url: name = "Server 4 (VidHide)"
-                        else: name = f"Server {len(servers)+1}"
+                        name = "Server " + str(len(servers) + 1)
+                        if 'rumble' in url: name = "Server 1 (Rumble)"
+                        elif 'ok.ru' in url: name = "Server 2 (OK.ru)"
+                        elif 'vidhide' in url: name = "Server 3 (VidHide)"
                         servers.append({"name": name, "url": url})
 
-            # Check for WordPress player AJAX data attributes if regex returns empty
+            # 2. Fallback: direct site stream frame if no third-party embeds are isolated
             if not servers:
-                options = soup.find_all(['option', 'li', 'div'], attrs={'data-post': True})
-                for opt in options:
-                    post_id = opt.get('data-post')
-                    nume = opt.get('data-nume')
-                    type_val = opt.get('data-type')
-                    if post_id:
-                        ajax_res = requests.post(
-                            "https://luciferdonghua.in/wp-admin/admin-ajax.php",
-                            data={'action': 'player_ajax', 'post': post_id, 'nume': nume, 'type': type_val},
-                            headers=HEADERS,
-                            timeout=5
-                        )
-                        iframe_src = re.search(r'src=["\']([^"\']+)["\']', ajax_res.text)
-                        if iframe_src:
-                            embed_link = iframe_src.group(1)
-                            if embed_link.startswith('//'):
-                                embed_link = 'https:' + embed_link
-                            servers.append({"name": f"Server {len(servers)+1}", "url": embed_link})
+                servers.append({"name": "Direct Web Player", "url": target_url})
 
-            # Episode list builder
+            # 3. Extract all episodes
             series_anchor = soup.find('a', href=re.compile(r'/anime/|/series/'))
             ep_target = series_anchor.get('href') if series_anchor else target_url
             
@@ -237,7 +259,7 @@ def watch():
         <div class="server-box">
             <div class="server-title">Select Video Server</div>
             <div class="server-grid">
-                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No direct stream link available.</p>"}
+                {server_btns}
             </div>
         </div>
 
@@ -246,7 +268,7 @@ def watch():
             <div class="ep-grid">{episodes_html}</div>
         </div>
     '''
-    return render_template_string(LAYOUT, title=title, content=content)
+    return render_template_string(LAYOUT, title=title, content=content, active_nav="")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
