@@ -11,81 +11,132 @@ HEADERS = {
     "Referer": "https://luciferdonghua.in/"
 }
 
-HTML_TEMPLATE = """
+# Master layout matching exact dark theme and mobile navbar
+LAYOUT = """
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ title }} - AniLucifer VIP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{{ title }} - Lucifer Donghua</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Poppins', sans-serif; }
-        body { background-color: #0b0c10; color: #c5c6c7; min-height: 100vh; }
-        
-        header { background: #1f2833; border-bottom: 2px solid #66fcf1; padding: 15px 5%; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-        .logo { font-size: 24px; font-weight: 800; color: #fff; text-decoration: none; letter-spacing: 1px; }
-        .logo span { color: #66fcf1; }
-        
-        .search-box { display: flex; background: #0b0c10; border-radius: 20px; border: 1px solid #45a29e; overflow: hidden; padding: 2px 10px; }
-        .search-box input { background: transparent; border: none; outline: none; color: #fff; padding: 6px 10px; font-size: 13px; width: 140px; }
-        .search-box button { background: none; border: none; color: #66fcf1; cursor: pointer; font-weight: bold; }
-
-        .container { max-width: 1200px; margin: 25px auto; padding: 0 20px; }
-        
-        .player-card { background: #1f2833; border-radius: 12px; overflow: hidden; border: 1px solid #45a29e; box-shadow: 0 8px 30px rgba(102, 252, 241, 0.1); margin-bottom: 25px; }
-        .player-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; }
-        iframe { width: 100%; height: 100%; border: 0; }
-        
-        .server-bar { display: flex; gap: 10px; padding: 12px; background: #111; overflow-x: auto; border-top: 1px solid #333; }
-        .server-btn { background: #1f2833; color: #66fcf1; border: 1px solid #45a29e; padding: 6px 14px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap; transition: 0.3s; }
-        .server-btn.active, .server-btn:hover { background: #66fcf1; color: #0b0c10; }
-
-        .section-title { font-size: 18px; font-weight: 700; color: #fff; margin: 25px 0 15px; border-left: 4px solid #66fcf1; padding-left: 10px; text-transform: uppercase; }
-        
-        .episodes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(90px, 1fr)); gap: 10px; margin-bottom: 30px; }
-        .ep-btn { background: #1f2833; color: #fff; text-align: center; padding: 10px 5px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 13px; border: 1px solid #2c3540; transition: 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ep-btn:hover, .ep-btn.active { background: #66fcf1; color: #0b0c10; border-color: #66fcf1; font-weight: 700; }
-
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 18px; }
-        .card { background: #1f2833; border-radius: 10px; overflow: hidden; text-decoration: none; border: 1px solid #2c3540; transition: transform 0.3s, box-shadow 0.3s; display: block; }
-        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(102, 252, 241, 0.2); border-color: #66fcf1; }
-        .card img { width: 100%; height: 230px; object-fit: cover; display: block; }
-        .card-body { padding: 12px; }
-        .card-title { font-size: 13px; font-weight: 600; color: #fff; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; height: 38px; }
-
-        @media (max-width: 600px) {
-            .grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
-            .card img { height: 190px; }
-            .search-box input { width: 90px; }
+        :root {
+            --bg-color: #0c0d12;
+            --card-bg: #151821;
+            --accent-red: #e50914;
+            --text-color: #e0e0e0;
+            --border-color: #222634;
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 70px; }
+
+        /* Top Header */
+        header { background: #12141d; height: 55px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; position: sticky; top: 0; z-index: 1000; }
+        .menu-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
+        .logo { font-size: 18px; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: 0.5px; }
+        .logo span { color: var(--accent-red); }
+        .header-actions { display: flex; gap: 15px; align-items: center; }
+        .login-btn { background: var(--accent-red); color: #fff; border: none; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; text-decoration: none; }
+
+        /* Premium Banner */
+        .premium-box { background: linear-gradient(135deg, #1d080a 0%, #3a0d11 100%); border: 1px solid var(--accent-red); border-radius: 8px; margin: 12px 15px; padding: 12px; position: relative; }
+        .premium-title { font-size: 14px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 6px; }
+        .premium-sub { font-size: 11px; color: #aaa; margin: 4px 0 8px; }
+        .premium-pills { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+        .pill { background: rgba(229, 9, 20, 0.2); color: #ff6b72; font-size: 10px; padding: 2px 6px; border-radius: 3px; border: 1px solid rgba(229, 9, 20, 0.4); }
+        .premium-btn { background: var(--accent-red); color: #fff; border: none; width: 100%; padding: 8px; border-radius: 4px; font-weight: bold; font-size: 12px; text-align: center; text-decoration: none; display: block; }
+
+        /* Sidebar Navigation Drawer */
+        .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: none; }
+        .drawer { position: fixed; top: 0; left: -260px; width: 260px; height: 100%; background: #12141d; z-index: 2001; transition: left 0.3s ease; border-right: 1px solid var(--border-color); padding-top: 15px; }
+        .drawer.open { left: 0; }
+        .drawer-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: #ccc; text-decoration: none; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); }
+        .drawer-item i { width: 20px; color: var(--accent-red); }
+
+        /* Compact Grid Cards (3 Columns) */
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 12px; }
+        .card { background: var(--card-bg); border-radius: 6px; overflow: hidden; text-decoration: none; position: relative; display: block; border: 1px solid var(--border-color); }
+        .card-img-wrap { position: relative; width: 100%; padding-top: 140%; }
+        .card-img-wrap img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
+        .badge-type { position: absolute; top: 4px; left: 4px; background: rgba(0,0,0,0.75); color: #ffb400; font-size: 8px; font-weight: 800; padding: 1px 4px; border-radius: 2px; }
+        .badge-ep { position: absolute; bottom: 4px; left: 4px; background: var(--accent-red); color: #fff; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; }
+        .card-title { font-size: 11px; font-weight: 600; color: #fff; padding: 6px 4px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 32px; }
+
+        /* Section Header */
+        .section-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 12px 10px; }
+        .section-title { font-size: 14px; font-weight: 800; color: #fff; border-left: 3px solid var(--accent-red); padding-left: 8px; text-transform: uppercase; }
+
+        /* Bottom Fixed Navigation Bar */
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 55px; background: #12141d; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #777; text-decoration: none; font-size: 10px; gap: 3px; }
+        .nav-item i { font-size: 16px; }
+        .nav-item.active { color: var(--accent-red); }
+
+        /* Video Player Wrapper */
+        .player-container { width: 100%; aspect-ratio: 16/9; background: #000; margin-bottom: 15px; }
+        iframe { width: 100%; height: 100%; border: 0; }
     </style>
 </head>
 <body>
     <header>
-        <a href="/" class="logo">ANI<span>LUCIFER</span></a>
-        <form action="/search" method="GET" class="search-box">
-            <input type="text" name="q" placeholder="Search..." required>
-            <button type="submit">🔍</button>
-        </form>
+        <button class="menu-btn" onclick="toggleDrawer()"><i class="fa-solid fa-bars"></i></button>
+        <a href="/" class="logo">LUCIFER <span>DONGHUA</span></a>
+        <div class="header-actions">
+            <a href="/login" class="login-btn"><i class="fa-solid fa-right-to-bracket"></i> Login</a>
+        </div>
     </header>
-    <div class="container">
-        {{ content | safe }}
+
+    <div class="drawer-overlay" id="overlay" onclick="toggleDrawer()"></div>
+    <div class="drawer" id="drawer">
+        <a href="/" class="drawer-item"><i class="fa-solid fa-house"></i> Home</a>
+        <a href="/history" class="drawer-item"><i class="fa-solid fa-clock-rotate-left"></i> Anime History</a>
+        <a href="/genres" class="drawer-item"><i class="fa-solid fa-tags"></i> Genres</a>
+        <a href="/tencent" class="drawer-item"><i class="fa-solid fa-tv"></i> Tencent Anime</a>
+        <a href="/youku" class="drawer-item"><i class="fa-solid fa-play"></i> Youku Anime</a>
+        <a href="/az-lists" class="drawer-item"><i class="fa-solid fa-list-ol"></i> AZ Lists</a>
+        <a href="/bookmarks" class="drawer-item"><i class="fa-solid fa-bookmark"></i> Bookmarks</a>
     </div>
+
+    <div class="premium-box">
+        <div class="premium-title"><i class="fa-solid fa-crown" style="color:#ffb400;"></i> Go Premium and Remove All Ads</div>
+        <div class="premium-sub">No ads, faster player, full 4K access. Start from $1.19 per month.</div>
+        <div class="premium-pills">
+            <span class="pill">✓ No ads</span>
+            <span class="pill">✓ 4K Quality</span>
+            <span class="pill">✓ High Speed Streaming</span>
+        </div>
+        <a href="#" class="premium-btn">Get Premium →</a>
+    </div>
+
+    {{ content | safe }}
+
+    <nav class="bottom-nav">
+        <a href="/" class="nav-item {{ 'active' if page == 'home' }}"><i class="fa-solid fa-house"></i>Home</a>
+        <a href="/schedule" class="nav-item {{ 'active' if page == 'schedule' }}"><i class="fa-solid fa-calendar-days"></i>Schedule</a>
+        <a href="/az-lists" class="nav-item {{ 'active' if page == 'anime' }}"><i class="fa-solid fa-film"></i>Anime</a>
+        <a href="/history" class="nav-item {{ 'active' if page == 'saved' }}"><i class="fa-solid fa-bookmark"></i>Saved</a>
+    </nav>
+
     <script>
-        function switchServer(url, btn) {
-            document.getElementById('video-frame').src = url;
-            document.querySelectorAll('.server-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+        function toggleDrawer() {
+            const drawer = document.getElementById('drawer');
+            const overlay = document.getElementById('overlay');
+            if (drawer.classList.contains('open')) {
+                drawer.classList.remove('open');
+                overlay.style.display = 'none';
+            } else {
+                drawer.classList.add('open');
+                overlay.style.display = 'block';
+            }
         }
     </script>
 </body>
 </html>
 """
 
-@app.route('/')
-def index():
-    url = "https://luciferdonghua.in/"
+def fetch_cards(url):
     cards_html = ""
     try:
         res = requests.get(url, headers=HEADERS, timeout=10)
@@ -99,141 +150,121 @@ def index():
             if link_tag and title_tag:
                 title = title_tag.get_text(strip=True)
                 target_url = link_tag.get('href', '')
+                
                 poster = ""
                 if img_tag:
                     poster = img_tag.get('data-src') or img_tag.get('src') or img_tag.get('data-lazy-src') or ""
                 
+                # Parse episode number if available
+                ep_match = re.search(r'Ep\s*\d+|Episode\s*\d+', title, re.IGNORECASE)
+                ep_badge = ep_match.group(0) if ep_match else "4K"
+
                 cards_html += f'''
                 <a href="/watch?url={target_url}" class="card">
-                    <img src="{poster}" alt="{title}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Cover'">
-                    <div class="card-body">
-                        <div class="card-title">{title}</div>
+                    <div class="card-img-wrap">
+                        <img src="{poster}" alt="{title}" onerror="this.src='https://via.placeholder.com/150x210?text=No+Cover'">
+                        <span class="badge-type">DONGHUA</span>
+                        <span class="badge-ep">{ep_badge}</span>
                     </div>
+                    <div class="card-title">{title}</div>
                 </a>
                 '''
     except Exception as e:
-        cards_html = f"<p>Error loading content: {e}</p>"
+        cards_html = f"<p style='padding:15px; color:#aaa;'>Error loading items: {e}</p>"
+    return cards_html
 
+@app.route('/')
+def index():
+    cards = fetch_cards("https://luciferdonghua.in/")
     content = f'''
-        <div class="section-title">Latest Released Episodes</div>
-        <div class="grid">{cards_html}</div>
+        <div class="section-header">
+            <div class="section-title">Popular Today</div>
+        </div>
+        <div class="grid-3">{cards}</div>
     '''
-    return render_template_string(HTML_TEMPLATE, title="Home", content=content)
+    return render_template_string(LAYOUT, title="Home", content=content, page="home")
 
 @app.route('/watch')
-def watch_page():
+def watch():
     target_url = request.args.get('url')
-    if not target_url:
-        return "Missing URL parameter", 400
-        
+    embed_src = ""
     title = "Watch Donghua"
-    servers = []
-    episodes = []
     
     try:
         res = requests.get(target_url, headers=HEADERS, timeout=10)
         soup = BeautifulSoup(res.text, 'html.parser')
-        
-        title_tag = soup.find('h1')
-        if title_tag:
-            title = title_tag.get_text(strip=True)
-
-        # Extract all iframes and video player options
-        for iframe in soup.find_all('iframe'):
-            src = iframe.get('src', '')
-            if src:
-                if src.startswith('//'):
-                    src = 'https:' + src
-                servers.append(src)
-
-        # Regex search for alternate embeds in scripts
-        scripts = soup.find_all('script')
-        for script in scripts:
-            if script.string:
-                matches = re.findall(r'https?://[^\s"\'<>]+(?:embed|player|dood|filelions|streamwish)[^\s"\'<>]*', script.string)
-                for m in matches:
-                    if m not in servers:
-                        servers.append(m)
-
-        # Extract Episode navigation links accurately
-        for a in soup.find_all('a', href=True):
-            href = a['href']
-            text = a.get_text(strip=True)
-            if ('luciferdonghua.in' in href or href.startswith('/')) and ('episode' in href or 'ep-' in href or re.search(r'-\d+/$', href)):
-                if text and len(text) < 20 and href not in [e['url'] for e in episodes]:
-                    episodes.append({"title": text, "url": href})
-
-    except Exception as e:
-        print("Watch parse error:", e)
-
-    # Server buttons builder
-    server_buttons = ""
-    default_stream = servers[0] if servers else target_url
-    for idx, s in enumerate(servers):
-        active = "active" if idx == 0 else ""
-        server_buttons += f'<button class="server-btn {active}" onclick="switchServer(\'{s}\', this)">Server {idx+1}</button>'
-
-    # Episode buttons builder
-    episodes_html = ""
-    for ep in episodes:
-        episodes_html += f'<a href="/watch?url={ep["url"]}" class="ep-btn">{ep["title"]}</a>'
-
-    content = f'''
-        <h2 style="margin-bottom: 15px; font-size: 20px; color:#fff;">{title}</h2>
-        <div class="player-card">
-            <div class="player-wrapper">
-                <iframe id="video-frame" src="{default_stream}" allowfullscreen allow="autoplay; encrypted-media"></iframe>
-            </div>
-            <div class="server-bar">
-                <span style="font-size:12px; font-weight:bold; color:#fff; align-self:center; margin-right:5px;">SERVERS:</span>
-                {server_buttons if server_buttons else '<button class="server-btn active">Default Proxy</button>'}
-            </div>
-        </div>
-        
-        <div class="section-title">Episode Select</div>
-        <div class="episodes-grid">
-            {episodes_html if episodes_html else '<p style="color:#aaa;">Streaming source playing above. Select other series below.</p>'}
-        </div>
-    '''
-    return render_template_string(HTML_TEMPLATE, title=title, content=content)
-
-@app.route('/search')
-def search():
-    query = request.args.get('q', '')
-    url = f"https://luciferdonghua.in/?s={query}"
-    cards_html = ""
-    try:
-        res = requests.get(url, headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(res.text, 'html.parser')
-        
-        for article in soup.find_all('article'):
-            link_tag = article.find('a')
-            img_tag = article.find('img')
-            title_tag = article.find('h2') or article.find('h3') or link_tag
+        h1 = soup.find('h1')
+        if h1:
+            title = h1.get_text(strip=True)
             
-            if link_tag and title_tag:
-                title = title_tag.get_text(strip=True)
-                target_url = link_tag.get('href', '')
-                poster = ""
-                if img_tag:
-                    poster = img_tag.get('data-src') or img_tag.get('src') or img_tag.get('data-lazy-src') or ""
-                
-                cards_html += f'''
-                <a href="/watch?url={target_url}" class="card">
-                    <img src="{poster}" alt="{title}" onerror="this.src='https://via.placeholder.com/200x300?text=No+Cover'">
-                    <div class="card-body">
-                        <div class="card-title">{title}</div>
-                    </div>
-                </a>
-                '''
+        iframe = soup.find('iframe')
+        if iframe and iframe.get('src'):
+            embed_src = iframe.get('src')
+            if embed_src.startswith('//'):
+                embed_src = 'https:' + embed_src
     except Exception as e:
-        cards_html = f"<p>Search error: {e}</p>"
+        print("Error fetching stream:", e)
 
     content = f'''
-        <div class="section-title">Search Results for: "{query}"</div>
-        <div class="grid">{cards_html if cards_html else '<p>No series found.</p>'}</div>
+        <div class="player-container">
+            <iframe src="{embed_src}" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+        </div>
+        <div class="section-header">
+            <div class="section-title">{title}</div>
+        </div>
     '''
-    return render_template_string(HTML_TEMPLATE, title=f"Search: {query}", content=content)
+    return render_template_string(LAYOUT, title=title, content=content, page="anime")
+
+@app.route('/genres')
+def genres():
+    genres_list = [
+        ("Action", 315), ("Adult Cast", 1), ("Adventure", 279), ("Comedy", 106),
+        ("Cultivation", 1), ("Demons", 110), ("Drama", 11), ("Emotional", 2),
+        ("Fantasy", 294), ("Gourmet", 1), ("Harem", 22), ("Historical", 137),
+        ("Horror", 3), ("Isekai", 24), ("Magic", 13), ("Martial Art", 144),
+        ("Martial Arts", 56), ("Mystery", 2), ("Mythology", 6), ("Post-Apocalyptic", 1)
+    ]
+    
+    boxes = ""
+    for name, count in genres_list:
+        boxes += f'''
+        <div style="background:#151821; border:1px solid #222634; border-radius:4px; padding:10px; display:flex; justify-between; align-items:center;">
+            <span style="font-size:12px; font-weight:bold; color:#fff;">{name}</span>
+            <span style="font-size:10px; color:#e50914; background:rgba(229,9,20,0.1); padding:2px 6px; border-radius:3px;">{count}</span>
+        </div>
+        '''
+        
+    content = f'''
+        <div class="section-header"><div class="section-title">Genres</div></div>
+        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; padding:0 12px;">{boxes}</div>
+    '''
+    return render_template_string(LAYOUT, title="Genres", content=content, page="anime")
+
+@app.route('/history')
+def history():
+    content = '''
+        <div class="section-header"><div class="section-title">Anime History</div></div>
+        <p style="padding: 12px; font-size:12px; color:#aaa;">This is your history, you can select episode or anime to continue watching where you left off.</p>
+    '''
+    return render_template_string(LAYOUT, title="History", content=content, page="saved")
+
+@app.route('/schedule')
+def schedule():
+    cards = fetch_cards("https://luciferdonghua.in/schedule/")
+    content = f'''
+        <div class="section-header"><div class="section-title">Weekly Schedule</div></div>
+        <div class="grid-3">{cards}</div>
+    '''
+    return render_template_string(LAYOUT, title="Schedule", content=content, page="schedule")
+
+@app.route('/az-lists')
+def az_lists():
+    cards = fetch_cards("https://luciferdonghua.in/az-list/")
+    content = f'''
+        <div class="section-header"><div class="section-title">AZ Lists</div></div>
+        <div class="grid-3">{cards}</div>
+    '''
+    return render_template_string(LAYOUT, title="AZ Lists", content=content, page="anime")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
