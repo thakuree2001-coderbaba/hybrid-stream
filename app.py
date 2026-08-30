@@ -1,6 +1,7 @@
 import os
 import re
 import json
+import base64
 import requests
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, request, render_template_string
@@ -54,6 +55,7 @@ LAYOUT = """
         .ep-list-container { padding: 0 12px; margin-bottom: 15px; }
         .ep-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-height: 250px; overflow-y: auto; }
         .ep-btn { background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 4px; border-radius: 4px; text-align: center; text-decoration: none; display: block; color: var(--accent-red); font-size: 11px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ep-btn.active-ep { border-color: var(--accent-red); background: rgba(229, 9, 20, 0.15); }
         
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 55px; background: #12141d; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #777; text-decoration: none; font-size: 10px; gap: 3px; }
@@ -85,6 +87,20 @@ LAYOUT = """
 </body>
 </html>
 """
+
+def decode_base64_if_needed(text):
+    if text.startswith('http://') or text.startswith('https://') or text.startswith('//'):
+        return text
+    try:
+        decoded = base64.b64decode(text).decode('utf-8')
+        match = re.search(r'src=["\']([^"\']+)["\']', decoded)
+        if match:
+            return match.group(1)
+        if decoded.startswith('http') or decoded.startswith('//'):
+            return decoded
+    except Exception:
+        pass
+    return text
 
 @app.route('/')
 def index():
@@ -118,7 +134,7 @@ def index():
 @app.route('/watch')
 def watch():
     target_url = request.args.get('url', '')
-    title = "Watch"
+    title = "Watch Donghua"
     servers = []
     episodes_html = ""
 
@@ -132,36 +148,46 @@ def watch():
             if h1:
                 title = h1.get_text(strip=True)
 
-            # Extract iframe sources directly via Regex from embedded scripts/iframes
-            raw_embeds = re.findall(r'<iframe[^>]+src=["\']([^"\']+)["\']', html_text, re.IGNORECASE)
-            
-            # Clean duplicate and internal layout links
-            for idx, embed in enumerate(raw_embeds):
-                if embed.startswith('//'):
-                    embed = 'https:' + embed
-                if 'facebook' not in embed and 'twitter' not in embed and embed not in [s['url'] for s in servers]:
-                    servers.append({
-                        "name": f"Server {len(servers)+1}",
-                        "url": embed
-                    })
-
-            # Extract episode list and scrub text
-            for ep in soup.find_all('a', href=re.compile(r'luciferdonghua\.in/')):
-                ep_href = ep.get('href')
-                ep_text = ep.get_text(strip=True)
+            # Extract dynamic player sources specifically from option / server elements
+            player_options = soup.find_all(['option', 'div', 'li'], class_=re.compile(r'server|player|option', re.I))
+            for idx, opt in enumerate(player_options):
+                val = opt.get('value') or opt.get('data-id') or opt.get('data-src') or ''
+                name = opt.get_text(strip=True) or f"Server {idx+1}"
                 
-                # Match episode links specifically
-                if re.search(r'episode-\d+|ep-\d+|\d+$', ep_href, re.IGNORECASE):
-                    # Clean title formatting
-                    clean_title = re.sub(r'4K|Watching|Aug\s*\d+,\s*\d+|Jul\s*\d+,\s*\d+', '', ep_text).strip()
-                    if not clean_title:
-                        clean_title = "Episode Stream"
+                if val:
+                    clean_url = decode_base64_if_needed(val)
+                    if clean_url.startswith('//'):
+                        clean_url = 'https:' + clean_url
+                    if 'http' in clean_url and not any(ad in clean_url for ad in ['youtube.com', 'wamindia', 'facebook']):
+                        servers.append({"name": name, "url": clean_url})
+
+            # Fallback player extraction via player container iframe
+            if not servers:
+                player_wrap = soup.find('div', class_=re.compile(r'player|embed|video', re.I))
+                if player_wrap:
+                    iframe = player_wrap.find('iframe')
+                    if iframe:
+                        src = iframe.get('src') or iframe.get('data-src') or ''
+                        if src:
+                            if src.startswith('//'): src = 'https:' + src
+                            servers.append({"name": "Main Player", "url": src})
+
+            # Extract actual episode list strictly from episode container
+            ep_container = soup.find('div', class_=re.compile(r'eplister|episodes|eplist', re.I)) or soup
+            for ep in ep_container.find_all('a'):
+                ep_href = ep.get('href', '')
+                if 'luciferdonghua.in' in ep_href and re.search(r'episode-\d+|ep-\d+', ep_href, re.I):
+                    # Clean episode text
+                    ep_num = re.search(r'Episode\s*\d+|Ep\s*\d+', ep.get_text(), re.I)
+                    display_text = ep_num.group(0) if ep_num else "Episode Link"
+                    
+                    is_current = "active-ep" if ep_href == target_url else ""
                     episodes_html += f'''
-                    <a href="/watch?url={ep_href}" class="ep-btn">{clean_title}</a>
+                    <a href="/watch?url={ep_href}" class="ep-btn {is_current}">{display_text}</a>
                     '''
 
         except Exception as e:
-            print("Error parsing target page:", e)
+            print("Parsing error:", e)
 
     server_btns = ""
     for idx, srv in enumerate(servers):
@@ -182,7 +208,7 @@ def watch():
         <div class="server-box">
             <div class="server-title">Select Video Server</div>
             <div class="server-grid">
-                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No streams extracted for this episode. Try selecting another episode below.</p>"}
+                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No active stream detected for this episode. Choose another episode below.</p>"}
             </div>
         </div>
 
