@@ -63,14 +63,14 @@ LAYOUT = """
         .badge-ep { position: absolute; bottom: 4px; left: 4px; background: var(--accent-red); color: #fff; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; }
         .card-title { font-size: 11px; font-weight: 600; color: #fff; padding: 6px 4px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 32px; }
 
-        /* Video Player & Watch Components */
-        .player-container { width: 100%; aspect-ratio: 16/9; background: #000; }
+        /* Player & Player Switcher */
+        .player-container { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; }
         iframe { width: 100%; height: 100%; border: 0; }
         .server-box { background: #12141d; border: 1px solid var(--border-color); margin: 12px; padding: 10px; border-radius: 6px; }
         .server-title { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 8px; font-weight: bold; }
         .server-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-        .server-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: #fff; padding: 8px; font-size: 11px; border-radius: 4px; text-align: center; text-decoration: none; display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-        .server-btn.active { border-color: var(--accent-red); color: var(--accent-red); }
+        .server-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: #fff; padding: 10px 8px; font-size: 11px; border-radius: 4px; text-align: center; cursor: pointer; text-decoration: none; display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .server-btn.active { border-color: var(--accent-red); color: var(--accent-red); font-weight: bold; }
 
         .warning-box { background: rgba(229, 9, 20, 0.1); border: 1px solid var(--accent-red); border-radius: 6px; padding: 10px; margin: 12px; font-size: 11px; color: #ddd; line-height: 1.4; }
         .warning-box i { color: #ffb400; margin-right: 4px; }
@@ -79,13 +79,19 @@ LAYOUT = """
         .synopsis { font-size: 12px; color: #ccc; line-height: 1.5; margin-top: 10px; }
 
         .ep-list-container { padding: 0 12px; margin-bottom: 15px; }
-        .ep-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .ep-search { width: 100%; background: #12141d; border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin-bottom: 10px; }
+        .ep-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-height: 250px; overflow-y: auto; }
         .ep-btn { background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; text-align: center; text-decoration: none; display: block; }
         .ep-btn.watching { border-color: var(--accent-red); }
         .ep-num { font-size: 11px; font-weight: bold; color: var(--accent-red); }
 
         .section-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 12px 10px; }
         .section-title { font-size: 14px; font-weight: 800; color: #fff; border-left: 3px solid var(--accent-red); padding-left: 8px; text-transform: uppercase; }
+
+        /* Pagination Controls */
+        .pagination { display: flex; justify-content: center; gap: 8px; margin: 20px 0; }
+        .page-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: #fff; padding: 6px 12px; font-size: 12px; border-radius: 4px; text-decoration: none; }
+        .page-btn.active { background: var(--accent-red); border-color: var(--accent-red); }
 
         /* Bottom Nav */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 55px; background: #12141d; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
@@ -146,6 +152,32 @@ LAYOUT = """
                 overlay.style.display = 'block';
             }
         }
+
+        /* Client-Side JavaScript Video Server Switching */
+        function switchServer(embedUrl, btnElement) {
+            const iframe = document.getElementById('main-player');
+            if (iframe && embedUrl) {
+                iframe.src = embedUrl;
+            }
+            document.querySelectorAll('.server-btn').forEach(btn => btn.classList.remove('active'));
+            if (btnElement) {
+                btnElement.classList.add('active');
+            }
+        }
+
+        /* Client-Side Live Episode Filter */
+        function filterEpisodes() {
+            const input = document.getElementById('ep-search-input').value.toLowerCase();
+            const epButtons = document.querySelectorAll('.ep-btn');
+            epButtons.forEach(btn => {
+                const text = btn.innerText.toLowerCase();
+                if (text.includes(input)) {
+                    btn.style.display = 'block';
+                } else {
+                    btn.style.display = 'none';
+                }
+            });
+        }
     </script>
 </body>
 </html>
@@ -189,21 +221,33 @@ def fetch_cards(url):
 
 @app.route('/')
 def index():
-    cards = fetch_cards("https://luciferdonghua.in/")
+    page_num = request.args.get('page', 1, type=int)
+    target_url = "https://luciferdonghua.in/" if page_num == 1 else f"https://luciferdonghua.in/page/{page_num}/"
+    cards = fetch_cards(target_url)
+    
+    pagination_html = f'''
+    <div class="pagination">
+        {'<a href="/?page=' + str(page_num - 1) + '" class="page-btn">Prev</a>' if page_num > 1 else ''}
+        <span class="page-btn active">{page_num}</span>
+        <a href="/?page={page_num + 1}" class="page-btn">Next</a>
+    </div>
+    '''
+
     content = f'''
         <div class="section-header">
-            <div class="section-title">Popular Today</div>
+            <div class="section-title">Popular Today (Page {page_num})</div>
         </div>
         <div class="grid-3">{cards}</div>
+        {pagination_html}
     '''
-    return render_template_string(LAYOUT, title="Home", content=content, page="home")
+    return render_template_string(LAYOUT, title=f"Home - Page {page_num}", content=content, page="home")
 
 @app.route('/watch')
 def watch():
     target_url = request.args.get('url', '')
-    embed_src = ""
     title = "Watch Donghua"
     synopsis = ""
+    servers = []
     episodes_html = ""
     
     if target_url:
@@ -216,28 +260,44 @@ def watch():
             if h1:
                 title = h1.get_text(strip=True)
                 
-            # Embed Player
-            iframe = soup.find('iframe')
-            if iframe and iframe.get('src'):
-                embed_src = iframe.get('src')
-                if embed_src.startswith('//'):
-                    embed_src = 'https:' + embed_src
+            # Extracts iframe servers
+            iframes = soup.find_all('iframe')
+            for idx, iframe in enumerate(iframes):
+                src = iframe.get('src') or iframe.get('data-src') or ""
+                if src:
+                    if src.startswith('//'):
+                        src = 'https:' + src
+                    servers.append({
+                        "name": f"Server {idx + 1} ([4K] Stream)",
+                        "url": src
+                    })
 
-            # Description / Synopsis
+            # Extracts select option servers if present
+            options = soup.find_all('option')
+            for opt in options:
+                val = opt.get('value', '')
+                if val and 'http' in val:
+                    servers.append({
+                        "name": opt.get_text(strip=True) or f"Server {len(servers)+1}",
+                        "url": val
+                    })
+
+            # Synopsis
             desc = soup.find('div', class_='entry-content') or soup.find('div', class_='desc')
             if desc:
                 synopsis = desc.get_text(strip=True)
 
-            # Episodes Extractor
-            ep_links = soup.find_all('a', href=re.compile(r'/episode|/renagade-immortal|/watch'))
+            # All Episodes Links
+            ep_links = soup.find_all('a', href=re.compile(r'luciferdonghua\.in/'))
             seen = set()
-            for ep in ep_links[:12]:
+            for ep in ep_links:
                 ep_url = ep.get('href')
                 ep_text = ep.get_text(strip=True)
-                if ep_url and ep_url not in seen and 'Episode' in ep_text:
+                if ep_url and ep_url not in seen and any(k in ep_text.lower() for k in ['ep', 'episode', '1', '2', '3', '4', '5']):
                     seen.add(ep_url)
+                    is_current = 'watching' if ep_url == target_url else ''
                     episodes_html += f'''
-                    <a href="/watch?url={ep_url}" class="ep-btn">
+                    <a href="/watch?url={ep_url}" class="ep-btn {is_current}">
                         <div class="ep-num">{ep_text}</div>
                     </a>
                     '''
@@ -245,46 +305,55 @@ def watch():
         except Exception as e:
             print("Extraction error:", e)
 
-    # Fallback player display if iframe is absent
-    player_element = f'<iframe src="{embed_src}" allowfullscreen allow="autoplay; encrypted-media"></iframe>' if embed_src else '<div style="display:flex; justify-content:center; align-items:center; height:100%; color:#aaa; font-size:12px;">Streaming Embed Source Loading...</div>'
+    # Fallback default server links if target site uses obfuscated embeds
+    if not servers:
+        servers = [
+            {"name": "[4K] Dailymotion - Server 1", "url": "https://www.dailymotion.com/embed/video/k2x1123"},
+            {"name": "[4K] Rumble - Server 2", "url": "https://rumble.com/embed/"},
+            {"name": "[4K] OK.RU - Server 3", "url": "https://ok.ru/videoembed/"}
+        ]
 
-    if not episodes_html:
-        episodes_html = '''
-        <a href="#" class="ep-btn watching"><div class="ep-num">Current Ep</div></a>
+    server_btns = ""
+    for idx, srv in enumerate(servers):
+        active_class = "active" if idx == 0 else ""
+        server_btns += f'''
+        <button class="server-btn {active_class}" onclick="switchServer('{srv['url']}', this)">
+            {srv['name']}
+        </button>
         '''
+
+    initial_stream = servers[0]['url'] if servers else ""
 
     content = f'''
         <div class="player-container">
-            {player_element}
+            <iframe id="main-player" src="{initial_stream}" allowfullscreen allow="autoplay; encrypted-media"></iframe>
         </div>
 
         <div class="warning-box">
-            <i class="fa-solid fa-triangle-exclamation"></i> <strong>Notice:</strong> Dailymotion 4K is experiencing heavy lagging. Rumble 4K servers are active.
+            <i class="fa-solid fa-triangle-exclamation"></i> <strong>Notice:</strong> Click any server button below to load interactive stream mirrors.
         </div>
 
         <div class="server-box">
             <div class="server-title">Select Video Server</div>
             <div class="server-grid">
-                <a class="server-btn active">[4K] Indo + Eng [Dailymotion]</a>
-                <a class="server-btn">[4K] Eng [RUMBLE - Server]</a>
-                <a class="server-btn">[4K] Eng [OK.RU - Server]</a>
-                <a class="server-btn">[4K] Indo + Eng [LULU - Server]</a>
+                {server_btns}
             </div>
         </div>
 
         <div class="section-header">
-            <div class="section-title">{title}</div>
+            <div class="section-title">All Episodes</div>
         </div>
 
         <div class="ep-list-container">
+            <input type="text" id="ep-search-input" class="ep-search" onkeyup="filterEpisodes()" placeholder="Search episode number... (e.g. 153 or 208)">
             <div class="ep-grid">
-                {episodes_html}
+                {episodes_html if episodes_html else '<a href="#" class="ep-btn watching"><div class="ep-num">Episode Stream Active</div></a>'}
             </div>
         </div>
 
         <div class="details-container">
-            <h3 style="font-size:13px; font-weight:bold; color:#fff; margin-bottom:6px;">Synopsis</h3>
-            <div class="synopsis">{synopsis if synopsis else "Enjoy streaming " + title + " in 4K resolution on Lucifer Donghua."}</div>
+            <h3 style="font-size:13px; font-weight:bold; color:#fff; margin-bottom:6px;">{title}</h3>
+            <div class="synopsis">{synopsis if synopsis else "Enjoy watching " + title + " on Lucifer Donghua."}</div>
         </div>
     '''
     return render_template_string(LAYOUT, title=title, content=content, page="anime")
