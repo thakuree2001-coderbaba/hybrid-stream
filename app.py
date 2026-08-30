@@ -141,33 +141,43 @@ def watch():
             if h1:
                 title = h1.get_text(strip=True)
 
-            # Look across all iframe tags and option selectors for valid embed links
-            elements = soup.find_all(['iframe', 'option', 'a', 'div'])
-            for elem in elements:
-                src = elem.get('src') or elem.get('data-src') or elem.get('value') or elem.get('data-lazy-src') or ''
-                if src.startswith('//'):
-                    src = 'https:' + src
-
-                # Ignore JS assets, site pages, and social widgets
-                if src.endswith('.js') or 'geo.dailymotion.com' in src:
-                    dm_match = re.search(r'video/([a-zA-Z0-9]+)', src) or re.search(r'id=([a-zA-Z0-9]+)', src)
-                    if dm_match:
-                        src = f"https://www.dailymotion.com/embed/video/{dm_match.group(1)}"
-                    else:
-                        continue
-
-                valid_domains = ['rumble.com', 'dailymotion.com/embed', 'ok.ru', 'vidhide', 'luluvdo', 'streamtape', 'mp4upload']
-                if any(domain in src for domain in valid_domains):
-                    if not any(s['url'] == src for s in servers):
-                        if 'rumble' in src: name = "Server 2 (Rumble 4K)"
-                        elif 'dailymotion' in src: name = "Server 1 (Dailymotion)"
-                        elif 'ok.ru' in src: name = "Server 3 (OK.ru)"
-                        elif 'vidhide' in src: name = "Server 4 (VidHide)"
+            # Extract raw URL strings using broad pattern matching across all JS variables
+            matches = re.findall(r'(https?://[^\s"\'<>]+)', html_text)
+            for raw in matches:
+                url = raw.replace('\\/', '/').replace('&amp;', '&')
+                
+                # Filter strictly for video hosting players
+                if any(k in url for k in ['rumble.com/embed', 'dailymotion.com/embed', 'ok.ru/videoembed', 'vidhide', 'luluvdo', 'streamtape']):
+                    if not any(s['url'] == url for s in servers):
+                        if 'rumble' in url: name = "Server 2 (Rumble 4K)"
+                        elif 'dailymotion' in url: name = "Server 1 (Dailymotion)"
+                        elif 'ok.ru' in url: name = "Server 3 (OK.ru)"
+                        elif 'vidhide' in url: name = "Server 4 (VidHide)"
                         else: name = f"Server {len(servers)+1}"
-                        
-                        servers.append({"name": name, "url": src})
+                        servers.append({"name": name, "url": url})
 
-            # Fetch full episode grid from the main anime series page
+            # Check for WordPress player AJAX data attributes if regex returns empty
+            if not servers:
+                options = soup.find_all(['option', 'li', 'div'], attrs={'data-post': True})
+                for opt in options:
+                    post_id = opt.get('data-post')
+                    nume = opt.get('data-nume')
+                    type_val = opt.get('data-type')
+                    if post_id:
+                        ajax_res = requests.post(
+                            "https://luciferdonghua.in/wp-admin/admin-ajax.php",
+                            data={'action': 'player_ajax', 'post': post_id, 'nume': nume, 'type': type_val},
+                            headers=HEADERS,
+                            timeout=5
+                        )
+                        iframe_src = re.search(r'src=["\']([^"\']+)["\']', ajax_res.text)
+                        if iframe_src:
+                            embed_link = iframe_src.group(1)
+                            if embed_link.startswith('//'):
+                                embed_link = 'https:' + embed_link
+                            servers.append({"name": f"Server {len(servers)+1}", "url": embed_link})
+
+            # Episode list builder
             series_anchor = soup.find('a', href=re.compile(r'/anime/|/series/'))
             ep_target = series_anchor.get('href') if series_anchor else target_url
             
