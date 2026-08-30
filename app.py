@@ -6,8 +6,7 @@ from flask import Flask, jsonify, request
 app = Flask(__name__, static_folder='public', static_url_path='')
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
-    "Referer": "https://luciferdonghua.in/"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
 }
 
 @app.route('/')
@@ -47,29 +46,6 @@ def get_latest():
         print("Backend Fetch Error:", e)
         
     return jsonify(items)
-
-@app.route('/api/embed')
-def get_embed():
-    target_url = request.args.get('url')
-    if not target_url:
-        return jsonify({"embed": ""})
-        
-    try:
-        res = requests.get(target_url, headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(res.text, 'html.parser')
-        
-        # Look specifically for stream player containers or any embed iframe
-        iframe = soup.find('iframe', id='option-1') or soup.find('iframe', class_='metaframe') or soup.find('iframe')
-        
-        if iframe and iframe.get('src'):
-            src = iframe.get('src')
-            if src.startswith('//'):
-                src = 'https:' + src
-            return jsonify({"embed": src})
-            
-        return jsonify({"embed": target_url})
-    except Exception as e:
-        return jsonify({"embed": target_url})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
