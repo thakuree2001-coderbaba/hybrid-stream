@@ -10,7 +10,8 @@ app = Flask(__name__, static_folder='public', static_url_path='')
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Referer": "https://luciferdonghua.in/"
+    "Referer": "https://luciferdonghua.in/",
+    "X-Requested-With": "XMLHttpRequest"
 }
 
 LAYOUT = """
@@ -88,19 +89,18 @@ LAYOUT = """
 </html>
 """
 
-def decode_base64_if_needed(text):
-    if text.startswith('http://') or text.startswith('https://') or text.startswith('//'):
-        return text
-    try:
-        decoded = base64.b64decode(text).decode('utf-8')
-        match = re.search(r'src=["\']([^"\']+)["\']', decoded)
-        if match:
-            return match.group(1)
-        if decoded.startswith('http') or decoded.startswith('//'):
-            return decoded
-    except Exception:
-        pass
-    return text
+def extract_iframe_url(html_content):
+    """Parses raw HTML/JS snippets returned by AJAX to extract actual embed link."""
+    if not html_content:
+        return ""
+    # Look for iframe src
+    match = re.search(r'src=["\']([^"\']+)["\']', html_content, re.IGNORECASE)
+    if match:
+        url = match.group(1)
+        if url.startswith('//'):
+            url = 'https:' + url
+        return url
+    return ""
 
 @app.route('/')
 def index():
@@ -148,46 +148,62 @@ def watch():
             if h1:
                 title = h1.get_text(strip=True)
 
-            # Extract dynamic player sources specifically from option / server elements
-            player_options = soup.find_all(['option', 'div', 'li'], class_=re.compile(r'server|player|option', re.I))
-            for idx, opt in enumerate(player_options):
-                val = opt.get('value') or opt.get('data-id') or opt.get('data-src') or ''
-                name = opt.get_text(strip=True) or f"Server {idx+1}"
-                
-                if val:
-                    clean_url = decode_base64_if_needed(val)
-                    if clean_url.startswith('//'):
-                        clean_url = 'https:' + clean_url
-                    if 'http' in clean_url and not any(ad in clean_url for ad in ['youtube.com', 'wamindia', 'facebook']):
-                        servers.append({"name": name, "url": clean_url})
+            # Extract WordPress post ID for Ajax player requests
+            post_id = None
+            post_id_match = re.search(r'p=([0-9]+)|post_id["\']?\s*:\s*["\']?([0-9]+)', html_text)
+            if post_id_match:
+                post_id = post_id_match.group(1) or post_id_match.group(2)
 
-            # Fallback player extraction via player container iframe
+            # Extract available options from server selector tabs
+            player_elements = soup.find_all(['option', 'li', 'div'], class_=re.compile(r'server|option|select-server', re.I))
+            
+            ajax_url = "https://luciferdonghua.in/wp-admin/admin-ajax.php"
+
+            for idx, elem in enumerate(player_elements):
+                type_val = elem.get('data-type') or 'post'
+                post_val = elem.get('data-post') or post_id
+                nume_val = elem.get('data-nume') or str(idx + 1)
+                name = elem.get_text(strip=True) or f"Server {idx+1}"
+
+                if post_val and nume_val:
+                    # Query WordPress AJAX endpoint for actual embed source
+                    payload = {
+                        'action': 'player_ajax',
+                        'post': post_val,
+                        'nume': nume_val,
+                        'type': type_val
+                    }
+                    try:
+                        ajax_res = requests.post(ajax_url, data=payload, headers=HEADERS, timeout=5)
+                        embed_link = extract_iframe_url(ajax_res.text)
+                        if embed_link and 'youtube' not in embed_link and 'wamindia' not in embed_link:
+                            servers.append({"name": name, "url": embed_link})
+                    except Exception:
+                        pass
+
+            # Fallback if AJAX call produces no link: search direct page iframes
             if not servers:
-                player_wrap = soup.find('div', class_=re.compile(r'player|embed|video', re.I))
-                if player_wrap:
-                    iframe = player_wrap.find('iframe')
-                    if iframe:
-                        src = iframe.get('src') or iframe.get('data-src') or ''
-                        if src:
-                            if src.startswith('//'): src = 'https:' + src
-                            servers.append({"name": "Main Player", "url": src})
+                for iframe in soup.find_all('iframe'):
+                    src = iframe.get('src') or iframe.get('data-src') or ''
+                    if src and not any(ad in src for ad in ['youtube', 'facebook', 'wamindia']):
+                        if src.startswith('//'):
+                            src = 'https:' + src
+                        servers.append({"name": "Direct Server", "url": src})
 
-            # Extract actual episode list strictly from episode container
+            # Clean and list episode links strictly from the main list block
             ep_container = soup.find('div', class_=re.compile(r'eplister|episodes|eplist', re.I)) or soup
             for ep in ep_container.find_all('a'):
                 ep_href = ep.get('href', '')
                 if 'luciferdonghua.in' in ep_href and re.search(r'episode-\d+|ep-\d+', ep_href, re.I):
-                    # Clean episode text
                     ep_num = re.search(r'Episode\s*\d+|Ep\s*\d+', ep.get_text(), re.I)
-                    display_text = ep_num.group(0) if ep_num else "Episode Link"
-                    
+                    display_text = ep_num.group(0) if ep_num else "Episode"
                     is_current = "active-ep" if ep_href == target_url else ""
                     episodes_html += f'''
                     <a href="/watch?url={ep_href}" class="ep-btn {is_current}">{display_text}</a>
                     '''
 
         except Exception as e:
-            print("Parsing error:", e)
+            print("Error processing watch page:", e)
 
     server_btns = ""
     for idx, srv in enumerate(servers):
@@ -208,7 +224,7 @@ def watch():
         <div class="server-box">
             <div class="server-title">Select Video Server</div>
             <div class="server-grid">
-                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No active stream detected for this episode. Choose another episode below.</p>"}
+                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No direct stream link available for this episode.</p>"}
             </div>
         </div>
 
