@@ -1,57 +1,57 @@
-import sqlite3
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, render_template_string
+import requests
+from bs4 import BeautifulSoup
+import os
 
-app = Flask(__name__, static_folder="public", static_url_path="")
+app = Flask(__name__, static_folder='public', static_url_path='')
 
-def get_db_connection():
-    conn = sqlite3.connect("database.db")
-    conn.row_factory = sqlite3.Row
-    return conn
-
-# Route to serve main index.html
-@app.route("/")
+@app.route('/')
 def index():
-    return send_from_directory("public", "index.html")
+    if os.path.exists('public/index.html'):
+        with open('public/index.html', 'r') as f:
+            return f.read()
+    return "Index page not found", 4404
 
-# API Endpoint to fetch Anime/Donghua media list
-@app.route("/api/media", methods=["GET"])
-def get_media():
-    category = request.args.get("category")
-    search = request.args.get("search")
-    
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    query = "SELECT * FROM Media WHERE 1=1"
-    params = []
-
-    if category and category != "All":
-        query += " AND category = ?"
-        params.append(category)
+@app.route('/api/catalog', methods=['GET'])
+def get_catalog():
+    url = "https://luciferdonghua.in/"
+    headers = {
+        "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36"
+    }
+    catalog = []
+    try:
+        res = requests.get(url, headers=headers, timeout=10)
+        soup = BeautifulSoup(res.text, 'html.parser')
         
-    if search:
-        query += " AND title LIKE ?"
-        params.append(f"%{search}%")
+        # Select post cards on luciferdonghua.in
+        articles = soup.find_all('article')
+        for idx, article in enumerate(articles):
+            title_tag = article.find('h2') or article.find('h3') or article.find('a')
+            link_tag = article.find('a')
+            img_tag = article.find('img')
+            
+            if title_tag and link_tag:
+                title = title_tag.get_text(strip=True)
+                page_url = link_tag.get('href', '')
+                
+                # Extract image thumbnail URL
+                poster = "https://via.placeholder.com/300x400"
+                if img_tag:
+                    poster = img_tag.get('data-src') or img_tag.get('src') or poster
+                
+                catalog.append({
+                    "id": idx + 1,
+                    "title": title,
+                    "category": "Donghua",
+                    "source_platform": "Lucifer Donghua",
+                    "poster_url": poster,
+                    "rating": "9.5",
+                    "stream_url": page_url
+                })
+    except Exception as e:
+        print("Scraping error:", e)
         
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    conn.close()
-
-    media_list = [dict(row) for row in rows]
-    return jsonify({"status": "success", "data": media_list})
-
-# API Endpoint to fetch episodes for a specific media item
-@app.route("/api/episodes/<int:media_id>", methods=["GET"])
-def get_episodes(media_id):
-    conn = get_db_connection()
-    cursor = conn.cursor()
-    
-    cursor.execute("SELECT * FROM Episodes WHERE media_id = ? ORDER BY episode_num ASC", (media_id,))
-    rows = cursor.fetchall()
-    conn.close()
-
-    episodes = [dict(row) for row in rows]
-    return jsonify({"status": "success", "data": episodes})
+    return jsonify(catalog)
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=8000, debug=True)
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
