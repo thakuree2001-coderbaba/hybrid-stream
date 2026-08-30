@@ -1,17 +1,14 @@
 import os
 import re
-import json
-import base64
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, jsonify, request, render_template_string
+from flask import Flask, request, render_template_string
 
 app = Flask(__name__, static_folder='public', static_url_path='')
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Referer": "https://luciferdonghua.in/",
-    "X-Requested-With": "XMLHttpRequest"
+    "Referer": "https://luciferdonghua.in/"
 }
 
 LAYOUT = """
@@ -20,46 +17,54 @@ LAYOUT = """
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>{{ title }} - Lucifer Donghua</title>
+    <title>{{ title }} - LUCIFER DONGHUA</title>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
         :root {
-            --bg-color: #0c0d12;
-            --card-bg: #151821;
+            --bg-color: #0b0c10;
+            --card-bg: #12141c;
             --accent-red: #e50914;
             --text-color: #e0e0e0;
-            --border-color: #222634;
+            --border-color: #1e2230;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 70px; }
 
-        header { background: #12141d; height: 55px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; position: sticky; top: 0; z-index: 1000; }
-        .logo { font-size: 18px; font-weight: 900; color: #fff; text-decoration: none; }
+        header { background: #0f111a; height: 55px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; position: sticky; top: 0; z-index: 1000; }
+        .logo { font-size: 18px; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: 0.5px; }
         .logo span { color: var(--accent-red); }
 
         .player-container { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; }
         iframe { width: 100%; height: 100%; border: 0; }
 
-        .server-box { background: #12141d; border: 1px solid var(--border-color); margin: 12px; padding: 10px; border-radius: 6px; }
-        .server-title { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 8px; font-weight: bold; }
-        .server-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-        .server-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: #fff; padding: 10px 8px; font-size: 11px; border-radius: 4px; text-align: center; cursor: pointer; text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .server-btn.active { border-color: var(--accent-red); color: var(--accent-red); font-weight: bold; }
+        .banner-premium { background: linear-gradient(135deg, #1c0507 0%, #0d0e15 100%); border: 1px solid #3d0c10; margin: 10px; padding: 12px; border-radius: 8px; position: relative; }
+        .banner-title { color: #fff; font-size: 13px; font-weight: bold; display: flex; align-items: center; gap: 6px; }
+        .banner-title i { color: #ffb703; }
+        .banner-sub { color: #888; font-size: 10px; margin: 4px 0 8px 0; }
+        .badge-group { display: flex; gap: 6px; }
+        .badge { background: rgba(229, 9, 20, 0.2); border: 1px solid var(--accent-red); color: #fff; font-size: 9px; padding: 3px 6px; border-radius: 4px; font-weight: bold; }
 
-        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 12px; }
+        .server-box { background: #0f111a; border: 1px solid var(--border-color); margin: 10px; padding: 12px; border-radius: 8px; }
+        .server-title { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 10px; font-weight: bold; letter-spacing: 0.5px; }
+        .server-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+        .server-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: #bbb; padding: 10px; font-size: 11px; border-radius: 6px; text-align: center; cursor: pointer; text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 600; }
+        .server-btn.active { border-color: var(--accent-red); color: var(--accent-red); background: rgba(229, 9, 20, 0.1); }
+
+        .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 10px; }
         .card { background: var(--card-bg); border-radius: 6px; overflow: hidden; text-decoration: none; position: relative; display: block; border: 1px solid var(--border-color); }
         .card-img-wrap { position: relative; width: 100%; padding-top: 140%; }
         .card-img-wrap img { position: absolute; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; }
-        .card-title { font-size: 11px; font-weight: 600; color: #fff; padding: 6px 4px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 32px; }
+        .card-badge { position: absolute; top: 4px; right: 4px; background: var(--accent-red); color: #fff; font-size: 9px; font-weight: bold; padding: 2px 4px; border-radius: 3px; }
+        .card-title { font-size: 10px; font-weight: 600; color: #eee; padding: 6px 4px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 30px; }
 
-        .ep-list-container { padding: 0 12px; margin-bottom: 15px; }
-        .ep-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-height: 250px; overflow-y: auto; }
-        .ep-btn { background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 4px; border-radius: 4px; text-align: center; text-decoration: none; display: block; color: var(--accent-red); font-size: 11px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-        .ep-btn.active-ep { border-color: var(--accent-red); background: rgba(229, 9, 20, 0.15); }
-        
-        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 55px; background: #12141d; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: #777; text-decoration: none; font-size: 10px; gap: 3px; }
+        .ep-list-container { padding: 0 10px; margin-top: 10px; }
+        .ep-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; max-height: 380px; overflow-y: auto; padding-right: 2px; }
+        .ep-btn { background: var(--card-bg); border: 1px solid var(--border-color); padding: 10px 4px; border-radius: 6px; text-align: center; text-decoration: none; display: block; color: var(--accent-red); font-size: 11px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .ep-btn.active-ep { border-color: var(--accent-red); background: rgba(229, 9, 20, 0.2); }
+
+        .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 55px; background: #0f111a; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: #666; text-decoration: none; font-size: 10px; gap: 3px; }
         .nav-item.active { color: var(--accent-red); }
     </style>
 </head>
@@ -72,7 +77,7 @@ LAYOUT = """
 
     <nav class="bottom-nav">
         <a href="/" class="nav-item active"><i class="fa-solid fa-house"></i>Home</a>
-        <a href="/watch" class="nav-item"><i class="fa-solid fa-film"></i>Anime</a>
+        <a href="/" class="nav-item"><i class="fa-solid fa-film"></i>Anime</a>
     </nav>
 
     <script>
@@ -88,19 +93,6 @@ LAYOUT = """
 </body>
 </html>
 """
-
-def extract_iframe_url(html_content):
-    """Parses raw HTML/JS snippets returned by AJAX to extract actual embed link."""
-    if not html_content:
-        return ""
-    # Look for iframe src
-    match = re.search(r'src=["\']([^"\']+)["\']', html_content, re.IGNORECASE)
-    if match:
-        url = match.group(1)
-        if url.startswith('//'):
-            url = 'https:' + url
-        return url
-    return ""
 
 @app.route('/')
 def index():
@@ -121,6 +113,7 @@ def index():
                 <a href="/watch?url={href}" class="card">
                     <div class="card-img-wrap">
                         <img src="{src}">
+                        <div class="card-badge">LD</div>
                     </div>
                     <div class="card-title">{t_text}</div>
                 </a>
@@ -128,7 +121,7 @@ def index():
     except Exception as e:
         cards_html = f"<p style='padding:15px;'>Error: {e}</p>"
 
-    content = f'<div class="grid-3" style="margin-top:15px;">{cards_html}</div>'
+    content = f'<div class="grid-3" style="margin-top:10px;">{cards_html}</div>'
     return render_template_string(LAYOUT, title="Home", content=content)
 
 @app.route('/watch')
@@ -136,74 +129,61 @@ def watch():
     target_url = request.args.get('url', '')
     title = "Watch Donghua"
     servers = []
-    episodes_html = ""
+    episodes = []
 
     if target_url:
         try:
             res = requests.get(target_url, headers=HEADERS, timeout=10)
             html_text = res.text
             soup = BeautifulSoup(html_text, 'html.parser')
-            
+
             h1 = soup.find('h1')
             if h1:
                 title = h1.get_text(strip=True)
 
-            # Extract WordPress post ID for Ajax player requests
-            post_id = None
-            post_id_match = re.search(r'p=([0-9]+)|post_id["\']?\s*:\s*["\']?([0-9]+)', html_text)
-            if post_id_match:
-                post_id = post_id_match.group(1) or post_id_match.group(2)
+            # 1. Fetch Real Player Embed Links directly from embed blocks/select elements
+            for option in soup.find_all(['option', 'li', 'iframe']):
+                src = option.get('value') or option.get('data-src') or option.get('src') or ''
+                if 'http' in src or src.startswith('//'):
+                    if src.startswith('//'): src = 'https:' + src
+                    # Exclude layout links, social widgets, and ads
+                    if not any(x in src for x in ['facebook', 'twitter', 'youtube', 'wamindia', 'luciferdonghua.in/wp-admin']):
+                        srv_name = option.get_text(strip=True) or f"Server {len(servers)+1}"
+                        if srv_name in ['Server', 'SELECT SERVER', '']: srv_name = f"Server {len(servers)+1}"
+                        if not any(s['url'] == src for s in servers):
+                            servers.append({"name": srv_name, "url": src})
 
-            # Extract available options from server selector tabs
-            player_elements = soup.find_all(['option', 'li', 'div'], class_=re.compile(r'server|option|select-server', re.I))
-            
-            ajax_url = "https://luciferdonghua.in/wp-admin/admin-ajax.php"
+            # 2. Extract Complete Series Link to pull ALL episodes (1 to latest)
+            series_link = None
+            series_anchor = soup.find('a', href=re.compile(r'/anime/|/series/'))
+            if series_anchor:
+                series_link = series_anchor.get('href')
 
-            for idx, elem in enumerate(player_elements):
-                type_val = elem.get('data-type') or 'post'
-                post_val = elem.get('data-post') or post_id
-                nume_val = elem.get('data-nume') or str(idx + 1)
-                name = elem.get_text(strip=True) or f"Server {idx+1}"
+            # Fetch episode list from parent series page if available, otherwise current page
+            ep_target = series_link if series_link else target_url
+            ep_res = requests.get(ep_target, headers=HEADERS, timeout=10)
+            ep_soup = BeautifulSoup(ep_res.text, 'html.parser')
 
-                if post_val and nume_val:
-                    # Query WordPress AJAX endpoint for actual embed source
-                    payload = {
-                        'action': 'player_ajax',
-                        'post': post_val,
-                        'nume': nume_val,
-                        'type': type_val
-                    }
-                    try:
-                        ajax_res = requests.post(ajax_url, data=payload, headers=HEADERS, timeout=5)
-                        embed_link = extract_iframe_url(ajax_res.text)
-                        if embed_link and 'youtube' not in embed_link and 'wamindia' not in embed_link:
-                            servers.append({"name": name, "url": embed_link})
-                    except Exception:
-                        pass
-
-            # Fallback if AJAX call produces no link: search direct page iframes
-            if not servers:
-                for iframe in soup.find_all('iframe'):
-                    src = iframe.get('src') or iframe.get('data-src') or ''
-                    if src and not any(ad in src for ad in ['youtube', 'facebook', 'wamindia']):
-                        if src.startswith('//'):
-                            src = 'https:' + src
-                        servers.append({"name": "Direct Server", "url": src})
-
-            # Clean and list episode links strictly from the main list block
-            ep_container = soup.find('div', class_=re.compile(r'eplister|episodes|eplist', re.I)) or soup
-            for ep in ep_container.find_all('a'):
+            # Parse all episode links clean from episode lists
+            ep_container = ep_soup.find('div', class_=re.compile(r'eplister|episodes|eplist|bx', re.I)) or ep_soup
+            for ep in ep_container.find_all('a', href=re.compile(r'luciferdonghua\.in/')):
                 ep_href = ep.get('href', '')
-                if 'luciferdonghua.in' in ep_href and re.search(r'episode-\d+|ep-\d+', ep_href, re.I):
-                    ep_num = re.search(r'Episode\s*\d+|Ep\s*\d+', ep.get_text(), re.I)
-                    display_text = ep_num.group(0) if ep_num else "Episode"
-                    is_current = "active-ep" if ep_href == target_url else ""
-                    episodes_html += f'''
-                    <a href="/watch?url={ep_href}" class="ep-btn {is_current}">{display_text}</a>
-                    '''
+                if re.search(r'episode-\d+|ep-\d+', ep_href, re.I):
+                    ep_match = re.search(r'Episode\s*(\d+)|Ep\s*(\d+)', ep.get_text(), re.I)
+                    if not ep_match:
+                        ep_match = re.search(r'-episode-(\d+)', ep_href, re.I)
+                    
+                    if ep_match:
+                        num = ep_match.group(1) or ep_match.group(2)
+                        display_name = f"Episode {num}"
+                    else:
+                        display_name = "Episode"
+
+                    if not any(e['href'] == ep_href for e in episodes):
+                        episodes.append({"name": display_name, "href": ep_href})
 
         except Exception as e:
-            print("Error processing watch page:", e)
+            print("Watch page parsing error:", e)
 
     server_btns = ""
     for idx, srv in enumerate(servers):
@@ -214,6 +194,13 @@ def watch():
         </button>
         '''
 
+    episodes_html = ""
+    for ep in episodes:
+        is_current = "active-ep" if ep['href'] == target_url else ""
+        episodes_html += f'''
+        <a href="/watch?url={ep['href']}" class="ep-btn {is_current}">{ep['name']}</a>
+        '''
+
     initial_stream = servers[0]['url'] if servers else ""
 
     content = f'''
@@ -221,16 +208,26 @@ def watch():
             <iframe id="main-player" src="{initial_stream}" allowfullscreen allow="autoplay; encrypted-media"></iframe>
         </div>
 
+        <div class="banner-premium">
+            <div class="banner-title"><i class="fa-solid fa-crown"></i> Go Premium and Remove All Ads</div>
+            <div class="banner-sub">No ads, faster player, full 4K access. Start from $1.19 per month.</div>
+            <div class="badge-group">
+                <span class="badge">✓ No ads</span>
+                <span class="badge">✓ 4K Quality</span>
+                <span class="badge">✓ High Speed Streaming</span>
+            </div>
+        </div>
+
         <div class="server-box">
             <div class="server-title">Select Video Server</div>
             <div class="server-grid">
-                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No direct stream link available for this episode.</p>"}
+                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No direct server extracted.</p>"}
             </div>
         </div>
 
         <div class="ep-list-container">
             <div class="server-title">Episodes</div>
-            <div class="ep-grid">{episodes_html}</div>
+            <div class="ep-grid">{episodes_html if episodes_html else "<p style='font-size:11px; color:#888;'>Loading episodes...</p>"}</div>
         </div>
     '''
     return render_template_string(LAYOUT, title=title, content=content)
