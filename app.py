@@ -141,17 +141,23 @@ def watch():
             if h1:
                 title = h1.get_text(strip=True)
 
-            # 1. Filter out direct webpage links to prevent inside-player site loops
-            raw_sources = re.findall(r'src=["\'](https?://[^"\']+|//[^"\']+)["\']', html_text)
-            
-            for src in raw_sources:
+            # Look across all iframe tags and option selectors for valid embed links
+            elements = soup.find_all(['iframe', 'option', 'a', 'div'])
+            for elem in elements:
+                src = elem.get('src') or elem.get('data-src') or elem.get('value') or elem.get('data-lazy-src') or ''
                 if src.startswith('//'):
                     src = 'https:' + src
-                
-                is_valid_embed = any(domain in src for domain in ['rumble.com', 'dailymotion.com', 'ok.ru', 'vidhide', 'luluvdo'])
-                is_lucifer_page = 'luciferdonghua.in' in src
 
-                if is_valid_embed and not is_lucifer_page:
+                # Ignore JS assets, site pages, and social widgets
+                if src.endswith('.js') or 'geo.dailymotion.com' in src:
+                    dm_match = re.search(r'video/([a-zA-Z0-9]+)', src) or re.search(r'id=([a-zA-Z0-9]+)', src)
+                    if dm_match:
+                        src = f"https://www.dailymotion.com/embed/video/{dm_match.group(1)}"
+                    else:
+                        continue
+
+                valid_domains = ['rumble.com', 'dailymotion.com/embed', 'ok.ru', 'vidhide', 'luluvdo', 'streamtape', 'mp4upload']
+                if any(domain in src for domain in valid_domains):
                     if not any(s['url'] == src for s in servers):
                         if 'rumble' in src: name = "Server 2 (Rumble 4K)"
                         elif 'dailymotion' in src: name = "Server 1 (Dailymotion)"
@@ -161,7 +167,7 @@ def watch():
                         
                         servers.append({"name": name, "url": src})
 
-            # 2. Extract series container for full episode lists
+            # Fetch full episode grid from the main anime series page
             series_anchor = soup.find('a', href=re.compile(r'/anime/|/series/'))
             ep_target = series_anchor.get('href') if series_anchor else target_url
             
@@ -201,7 +207,6 @@ def watch():
         <a href="/watch?url={ep['href']}" class="ep-btn {is_current}">{ep['name']}</a>
         '''
 
-    # Auto-select first direct stream embed
     initial_stream = servers[0]['url'] if servers else ""
 
     content = f'''
@@ -222,7 +227,7 @@ def watch():
         <div class="server-box">
             <div class="server-title">Select Video Server</div>
             <div class="server-grid">
-                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No clean embed links extracted.</p>"}
+                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No direct stream link available.</p>"}
             </div>
         </div>
 
