@@ -1,6 +1,6 @@
 import os
 import re
-import base64
+import json
 import requests
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, request, render_template_string
@@ -9,8 +9,7 @@ app = Flask(__name__, static_folder='public', static_url_path='')
 
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36",
-    "Referer": "https://luciferdonghua.in/",
-    "X-Requested-With": "XMLHttpRequest"
+    "Referer": "https://luciferdonghua.in/"
 }
 
 LAYOUT = """
@@ -39,11 +38,11 @@ LAYOUT = """
 
         .player-container { width: 100%; aspect-ratio: 16/9; background: #000; position: relative; }
         iframe { width: 100%; height: 100%; border: 0; }
-        
+
         .server-box { background: #12141d; border: 1px solid var(--border-color); margin: 12px; padding: 10px; border-radius: 6px; }
         .server-title { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 8px; font-weight: bold; }
         .server-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-        .server-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: #fff; padding: 10px 8px; font-size: 11px; border-radius: 4px; text-align: center; cursor: pointer; text-decoration: none; display: block; }
+        .server-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: #fff; padding: 10px 8px; font-size: 11px; border-radius: 4px; text-align: center; cursor: pointer; text-decoration: none; display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .server-btn.active { border-color: var(--accent-red); color: var(--accent-red); font-weight: bold; }
 
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 12px; }
@@ -54,7 +53,7 @@ LAYOUT = """
 
         .ep-list-container { padding: 0 12px; margin-bottom: 15px; }
         .ep-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; max-height: 250px; overflow-y: auto; }
-        .ep-btn { background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; text-align: center; text-decoration: none; display: block; color: var(--accent-red); font-size: 11px; font-weight: bold; }
+        .ep-btn { background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px 4px; border-radius: 4px; text-align: center; text-decoration: none; display: block; color: var(--accent-red); font-size: 11px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 55px; background: #12141d; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #777; text-decoration: none; font-size: 10px; gap: 3px; }
@@ -74,24 +73,13 @@ LAYOUT = """
     </nav>
 
     <script>
-        async function loadServer(postData, btnElement) {
+        function setServer(url, btnElement) {
             const iframe = document.getElementById('main-player');
-            document.querySelectorAll('.server-btn').forEach(btn => btn.classList.remove('active'));
-            if (btnElement) btnElement.classList.add('active');
-
-            try {
-                const res = await fetch('/api/get-stream', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(postData)
-                });
-                const data = await res.json();
-                if (data.url) {
-                    iframe.src = data.url;
-                }
-            } catch (err) {
-                console.error("Failed to fetch stream source", err);
+            if (iframe && url) {
+                iframe.src = url;
             }
+            document.querySelectorAll('.server-btn').forEach(b => b.classList.remove('active'));
+            if (btnElement) btnElement.classList.add('active');
         }
     </script>
 </body>
@@ -104,6 +92,7 @@ def index():
     try:
         res = requests.get("https://luciferdonghua.in/", headers=HEADERS, timeout=10)
         soup = BeautifulSoup(res.text, 'html.parser')
+        
         for article in soup.find_all('article'):
             link = article.find('a')
             img = article.find('img')
@@ -132,62 +121,68 @@ def watch():
     title = "Watch"
     servers = []
     episodes_html = ""
-    initial_src = ""
 
     if target_url:
         try:
             res = requests.get(target_url, headers=HEADERS, timeout=10)
-            soup = BeautifulSoup(res.text, 'html.parser')
+            html_text = res.text
+            soup = BeautifulSoup(html_text, 'html.parser')
             
             h1 = soup.find('h1')
             if h1:
                 title = h1.get_text(strip=True)
 
-            # Look for player elements with data attributes (WordPress player AJAX targets)
-            option_elements = soup.find_all(['option', 'div', 'button'], attrs={'data-post': True}) or soup.find_all(attrs={'data-type': True})
+            # Extract iframe sources directly via Regex from embedded scripts/iframes
+            raw_embeds = re.findall(r'<iframe[^>]+src=["\']([^"\']+)["\']', html_text, re.IGNORECASE)
             
-            for idx, el in enumerate(option_elements):
-                post_id = el.get('data-post') or el.get('data-id')
-                post_type = el.get('data-type') or 'player_ajax'
-                nume = el.get('data-nume') or str(idx + 1)
-                label = el.get_text(strip=True) or f"Server {idx + 1}"
-                
-                if post_id:
+            # Clean duplicate and internal layout links
+            for idx, embed in enumerate(raw_embeds):
+                if embed.startswith('//'):
+                    embed = 'https:' + embed
+                if 'facebook' not in embed and 'twitter' not in embed and embed not in [s['url'] for s in servers]:
                     servers.append({
-                        "name": label,
-                        "data": {"id": post_id, "type": post_type, "nume": nume}
+                        "name": f"Server {len(servers)+1}",
+                        "url": embed
                     })
 
-            # Fetch episode list
+            # Extract episode list and scrub text
             for ep in soup.find_all('a', href=re.compile(r'luciferdonghua\.in/')):
                 ep_href = ep.get('href')
                 ep_text = ep.get_text(strip=True)
-                if 'episode' in ep_href or 'ep-' in ep_href:
+                
+                # Match episode links specifically
+                if re.search(r'episode-\d+|ep-\d+|\d+$', ep_href, re.IGNORECASE):
+                    # Clean title formatting
+                    clean_title = re.sub(r'4K|Watching|Aug\s*\d+,\s*\d+|Jul\s*\d+,\s*\d+', '', ep_text).strip()
+                    if not clean_title:
+                        clean_title = "Episode Stream"
                     episodes_html += f'''
-                    <a href="/watch?url={ep_href}" class="ep-btn">{ep_text}</a>
+                    <a href="/watch?url={ep_href}" class="ep-btn">{clean_title}</a>
                     '''
 
         except Exception as e:
-            print("Error scraping page:", e)
+            print("Error parsing target page:", e)
 
     server_btns = ""
     for idx, srv in enumerate(servers):
         active_class = "active" if idx == 0 else ""
         server_btns += f'''
-        <button class="server-btn {active_class}" onclick='loadServer({srv["data"]}, this)'>
-            {srv["name"]}
+        <button class="server-btn {active_class}" onclick="setServer('{srv['url']}', this)">
+            {srv['name']}
         </button>
         '''
 
+    initial_stream = servers[0]['url'] if servers else ""
+
     content = f'''
         <div class="player-container">
-            <iframe id="main-player" src="{initial_src}" allowfullscreen></iframe>
+            <iframe id="main-player" src="{initial_stream}" allowfullscreen allow="autoplay; encrypted-media"></iframe>
         </div>
 
         <div class="server-box">
             <div class="server-title">Select Video Server</div>
             <div class="server-grid">
-                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No direct servers detected. Choose an episode below.</p>"}
+                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No streams extracted for this episode. Try selecting another episode below.</p>"}
             </div>
         </div>
 
@@ -197,33 +192,6 @@ def watch():
         </div>
     '''
     return render_template_string(LAYOUT, title=title, content=content)
-
-@app.route('/api/get-stream', methods=['POST'])
-def get_stream():
-    data = request.json or {}
-    try:
-        # Request stream embed directly from site's AJAX handler
-        ajax_url = "https://luciferdonghua.in/wp-admin/admin-ajax.php"
-        payload = {
-            "action": "player_ajax",
-            "post": data.get("id"),
-            "nume": data.get("nume"),
-            "type": data.get("type", "player_ajax")
-        }
-        res = requests.post(ajax_url, data=payload, headers=HEADERS, timeout=8)
-        
-        # Extract iframe src from returned HTML/JSON block
-        match = re.search(r'src=["\']([^"\']+)["\']', res.text)
-        if match:
-            embed_url = match.group(1)
-            if embed_url.startswith('//'):
-                embed_url = 'https:' + embed_url
-            return jsonify({"url": embed_url})
-            
-    except Exception as e:
-        print("AJAX parse error:", e)
-        
-    return jsonify({"url": ""})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
