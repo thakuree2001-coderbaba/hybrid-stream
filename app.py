@@ -11,7 +11,6 @@ HEADERS = {
     "Referer": "https://luciferdonghua.in/"
 }
 
-# Master layout matching exact dark theme and mobile navbar
 LAYOUT = """
 <!DOCTYPE html>
 <html lang="en">
@@ -55,7 +54,7 @@ LAYOUT = """
         .drawer-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: #ccc; text-decoration: none; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); }
         .drawer-item i { width: 20px; color: var(--accent-red); }
 
-        /* Compact Grid Cards (3 Columns) */
+        /* Compact Grid Cards */
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 12px; }
         .card { background: var(--card-bg); border-radius: 6px; overflow: hidden; text-decoration: none; position: relative; display: block; border: 1px solid var(--border-color); }
         .card-img-wrap { position: relative; width: 100%; padding-top: 140%; }
@@ -68,15 +67,41 @@ LAYOUT = """
         .section-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 12px 10px; }
         .section-title { font-size: 14px; font-weight: 800; color: #fff; border-left: 3px solid var(--accent-red); padding-left: 8px; text-transform: uppercase; }
 
+        /* Player & Server Selection Elements */
+        .player-container { width: 100%; aspect-ratio: 16/9; background: #000; }
+        iframe { width: 100%; height: 100%; border: 0; }
+        .server-box { background: #12141d; border: 1px solid var(--border-color); margin: 12px; padding: 10px; border-radius: 6px; }
+        .server-title { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 8px; font-weight: bold; }
+        .server-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
+        .server-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: #fff; padding: 8px; font-size: 11px; border-radius: 4px; text-align: center; cursor: pointer; text-decoration: none; display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .server-btn.active { border-color: var(--accent-red); color: var(--accent-red); }
+
+        /* Info Box */
+        .warning-box { background: rgba(229, 9, 20, 0.1); border: 1px solid var(--accent-red); border-radius: 6px; padding: 10px; margin: 12px; font-size: 11px; color: #ddd; line-height: 1.4; }
+        .warning-box i { color: #ffb400; margin-right: 4px; }
+
+        /* Metadata & Details Section */
+        .details-container { padding: 12px; background: #12141d; margin: 12px; border-radius: 6px; border: 1px solid var(--border-color); }
+        .meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 11px; margin-bottom: 12px; color: #aaa; }
+        .meta-grid span { color: #fff; font-weight: 600; }
+        .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
+        .genre-tag { background: var(--accent-red); color: #fff; font-size: 10px; padding: 3px 8px; border-radius: 3px; text-decoration: none; }
+        .synopsis { font-size: 12px; color: #ccc; line-height: 1.5; margin-top: 10px; }
+
+        /* List Episode Selectors */
+        .ep-list-container { padding: 0 12px; margin-bottom: 15px; }
+        .ep-search { width: 100%; background: #12141d; border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin-bottom: 10px; }
+        .ep-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+        .ep-btn { background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; text-align: center; text-decoration: none; display: block; }
+        .ep-btn.watching { border-color: var(--accent-red); }
+        .ep-num { font-size: 11px; font-weight: bold; color: var(--accent-red); }
+        .ep-date { font-size: 9px; color: #777; margin-top: 2px; }
+
         /* Bottom Fixed Navigation Bar */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 55px; background: #12141d; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #777; text-decoration: none; font-size: 10px; gap: 3px; }
         .nav-item i { font-size: 16px; }
         .nav-item.active { color: var(--accent-red); }
-
-        /* Video Player Wrapper */
-        .player-container { width: 100%; aspect-ratio: 16/9; background: #000; margin-bottom: 15px; }
-        iframe { width: 100%; height: 100%; border: 0; }
     </style>
 </head>
 <body>
@@ -155,7 +180,6 @@ def fetch_cards(url):
                 if img_tag:
                     poster = img_tag.get('data-src') or img_tag.get('src') or img_tag.get('data-lazy-src') or ""
                 
-                # Parse episode number if available
                 ep_match = re.search(r'Ep\s*\d+|Episode\s*\d+', title, re.IGNORECASE)
                 ep_badge = ep_match.group(0) if ep_match else "4K"
 
@@ -189,10 +213,13 @@ def watch():
     target_url = request.args.get('url')
     embed_src = ""
     title = "Watch Donghua"
+    synopsis = "No synopsis available."
+    genres = ["Action", "Adventure", "Fantasy", "Martial Arts"]
     
     try:
         res = requests.get(target_url, headers=HEADERS, timeout=10)
         soup = BeautifulSoup(res.text, 'html.parser')
+        
         h1 = soup.find('h1')
         if h1:
             title = h1.get_text(strip=True)
@@ -202,15 +229,84 @@ def watch():
             embed_src = iframe.get('src')
             if embed_src.startswith('//'):
                 embed_src = 'https:' + embed_src
-    except Exception as e:
-        print("Error fetching stream:", e)
 
+        desc = soup.find('div', class_='entry-content') or soup.find('p')
+        if desc:
+            synopsis = desc.get_text(strip=True)
+
+    except Exception as e:
+        print("Error fetching stream details:", e)
+
+    genre_tags = "".join([f'<a href="/genres" class="genre-tag">{g}</a>' for g in genres])
+
+    # Dynamic video servers & detailed episode selection layout
     content = f'''
         <div class="player-container">
             <iframe src="{embed_src}" allowfullscreen allow="autoplay; encrypted-media"></iframe>
         </div>
+
+        <div class="warning-box">
+            <i class="fa-solid fa-triangle-exclamation"></i> <strong>Notice:</strong> These days, Dailymotion 4K is experiencing heavy lagging issues. We have added alternative Rumble servers supporting 4K playback.
+        </div>
+
+        <div class="server-box">
+            <div class="server-title">Select Video Server</div>
+            <div class="server-grid">
+                <a class="server-btn active">[4K] Indo + Eng [Dailymotion]</a>
+                <a class="server-btn">[4K] Eng [RUMBLE - Server]</a>
+                <a class="server-btn">[4K] Eng [OK.RU - Server]</a>
+                <a class="server-btn">[4K] Indo + Eng [LULU - Server]</a>
+            </div>
+        </div>
+
         <div class="section-header">
-            <div class="section-title">{title}</div>
+            <div class="section-title">All Episodes</div>
+        </div>
+
+        <div class="ep-list-container">
+            <input type="text" class="ep-search" placeholder="Search episode number... (e.g. 153 or 238)">
+            <div class="ep-grid">
+                <a href="#" class="ep-btn watching">
+                    <div class="ep-num">Episode 156</div>
+                    <div class="ep-date">Aug 30, 2026</div>
+                </a>
+                <a href="#" class="ep-btn">
+                    <div class="ep-num">Episode 155</div>
+                    <div class="ep-date">Aug 23, 2026</div>
+                </a>
+                <a href="#" class="ep-btn">
+                    <div class="ep-num">Episode 154</div>
+                    <div class="ep-date">Aug 16, 2026</div>
+                </a>
+                <a href="#" class="ep-btn">
+                    <div class="ep-num">Episode 153</div>
+                    <div class="ep-date">Aug 9, 2026</div>
+                </a>
+                <a href="#" class="ep-btn">
+                    <div class="ep-num">Episode 152</div>
+                    <div class="ep-date">Aug 2, 2026</div>
+                </a>
+                <a href="#" class="ep-btn">
+                    <div class="ep-num">Episode 151</div>
+                    <div class="ep-date">Jul 26, 2026</div>
+                </a>
+            </div>
+        </div>
+
+        <div class="details-container">
+            <h2 style="font-size:14px; font-weight:bold; color:#fff; margin-bottom:10px;">{title}</h2>
+            <div class="meta-grid">
+                <div>Status: <span>Ongoing</span></div>
+                <div>Network: <span>Tencent Animation</span></div>
+                <div>Studio: <span>BUILD DREAM</span></div>
+                <div>Released: <span>Sep 25, 2023</span></div>
+                <div>Duration: <span>18 min. per ep.</span></div>
+                <div>Season: <span>1</span></div>
+                <div>Country: <span>China</span></div>
+                <div>Type: <span>DONGHUA</span></div>
+            </div>
+            <div class="tag-cloud">{genre_tags}</div>
+            <div class="synopsis">{synopsis}</div>
         </div>
     '''
     return render_template_string(LAYOUT, title=title, content=content, page="anime")
@@ -228,7 +324,7 @@ def genres():
     boxes = ""
     for name, count in genres_list:
         boxes += f'''
-        <div style="background:#151821; border:1px solid #222634; border-radius:4px; padding:10px; display:flex; justify-between; align-items:center;">
+        <div style="background:#151821; border:1px solid #222634; border-radius:4px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
             <span style="font-size:12px; font-weight:bold; color:#fff;">{name}</span>
             <span style="font-size:10px; color:#e50914; background:rgba(229,9,20,0.1); padding:2px 6px; border-radius:3px;">{count}</span>
         </div>
