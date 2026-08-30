@@ -141,30 +141,33 @@ def watch():
             if h1:
                 title = h1.get_text(strip=True)
 
-            # 1. Fetch Real Player Embed Links directly from embed blocks/select elements
-            for option in soup.find_all(['option', 'li', 'iframe']):
-                src = option.get('value') or option.get('data-src') or option.get('src') or ''
-                if 'http' in src or src.startswith('//'):
-                    if src.startswith('//'): src = 'https:' + src
-                    # Exclude layout links, social widgets, and ads
-                    if not any(x in src for x in ['facebook', 'twitter', 'youtube', 'wamindia', 'luciferdonghua.in/wp-admin']):
-                        srv_name = option.get_text(strip=True) or f"Server {len(servers)+1}"
-                        if srv_name in ['Server', 'SELECT SERVER', '']: srv_name = f"Server {len(servers)+1}"
-                        if not any(s['url'] == src for s in servers):
-                            servers.append({"name": srv_name, "url": src})
+            # 1. Filter out direct webpage links to prevent inside-player site loops
+            raw_sources = re.findall(r'src=["\'](https?://[^"\']+|//[^"\']+)["\']', html_text)
+            
+            for src in raw_sources:
+                if src.startswith('//'):
+                    src = 'https:' + src
+                
+                is_valid_embed = any(domain in src for domain in ['rumble.com', 'dailymotion.com', 'ok.ru', 'vidhide', 'luluvdo'])
+                is_lucifer_page = 'luciferdonghua.in' in src
 
-            # 2. Extract Complete Series Link to pull ALL episodes (1 to latest)
-            series_link = None
+                if is_valid_embed and not is_lucifer_page:
+                    if not any(s['url'] == src for s in servers):
+                        if 'rumble' in src: name = "Server 2 (Rumble 4K)"
+                        elif 'dailymotion' in src: name = "Server 1 (Dailymotion)"
+                        elif 'ok.ru' in src: name = "Server 3 (OK.ru)"
+                        elif 'vidhide' in src: name = "Server 4 (VidHide)"
+                        else: name = f"Server {len(servers)+1}"
+                        
+                        servers.append({"name": name, "url": src})
+
+            # 2. Extract series container for full episode lists
             series_anchor = soup.find('a', href=re.compile(r'/anime/|/series/'))
-            if series_anchor:
-                series_link = series_anchor.get('href')
-
-            # Fetch episode list from parent series page if available, otherwise current page
-            ep_target = series_link if series_link else target_url
+            ep_target = series_anchor.get('href') if series_anchor else target_url
+            
             ep_res = requests.get(ep_target, headers=HEADERS, timeout=10)
             ep_soup = BeautifulSoup(ep_res.text, 'html.parser')
 
-            # Parse all episode links clean from episode lists
             ep_container = ep_soup.find('div', class_=re.compile(r'eplister|episodes|eplist|bx', re.I)) or ep_soup
             for ep in ep_container.find_all('a', href=re.compile(r'luciferdonghua\.in/')):
                 ep_href = ep.get('href', '')
@@ -173,17 +176,14 @@ def watch():
                     if not ep_match:
                         ep_match = re.search(r'-episode-(\d+)', ep_href, re.I)
                     
-                    if ep_match:
-                        num = ep_match.group(1) or ep_match.group(2)
-                        display_name = f"Episode {num}"
-                    else:
-                        display_name = "Episode"
+                    num = ep_match.group(1) or ep_match.group(2) if ep_match else ""
+                    display_name = f"Episode {num}" if num else "Episode"
 
                     if not any(e['href'] == ep_href for e in episodes):
                         episodes.append({"name": display_name, "href": ep_href})
 
         except Exception as e:
-            print("Watch page parsing error:", e)
+            print("Parsing error:", e)
 
     server_btns = ""
     for idx, srv in enumerate(servers):
@@ -201,6 +201,7 @@ def watch():
         <a href="/watch?url={ep['href']}" class="ep-btn {is_current}">{ep['name']}</a>
         '''
 
+    # Auto-select first direct stream embed
     initial_stream = servers[0]['url'] if servers else ""
 
     content = f'''
@@ -221,13 +222,13 @@ def watch():
         <div class="server-box">
             <div class="server-title">Select Video Server</div>
             <div class="server-grid">
-                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No direct server extracted.</p>"}
+                {server_btns if server_btns else "<p style='font-size:11px; color:#888;'>No clean embed links extracted.</p>"}
             </div>
         </div>
 
         <div class="ep-list-container">
             <div class="server-title">Episodes</div>
-            <div class="ep-grid">{episodes_html if episodes_html else "<p style='font-size:11px; color:#888;'>Loading episodes...</p>"}</div>
+            <div class="ep-grid">{episodes_html}</div>
         </div>
     '''
     return render_template_string(LAYOUT, title=title, content=content)
