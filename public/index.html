@@ -3,60 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lucifer Donghua - Watch Chinese Anime Online</title>
+    <title>Lucifer Donghua</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { background-color: #0d0e12; color: #eceff4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+        body { background-color: #0d0e12; color: #eceff4; font-family: -apple-system, BlinkMacSystemFont, sans-serif; }
         
-        /* Lucifer Donghua Signature Header Nav */
         header { background: #151821; border-bottom: 2px solid #e50914; padding: 12px 20px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1000; }
-        .logo { font-size: 22px; font-weight: 800; color: #fff; text-decoration: none; letter-spacing: 0.5px; }
+        .logo { font-size: 22px; font-weight: 800; color: #fff; text-decoration: none; }
         .logo span { color: #e50914; }
         
-        nav { display: flex; gap: 18px; align-items: center; }
-        nav a { color: #b0b5c1; text-decoration: none; font-size: 14px; font-weight: 600; transition: color 0.2s; }
-        nav a:hover, nav a.active { color: #e50914; }
-        
-        /* Main Container */
         .container { max-width: 1200px; margin: 20px auto; padding: 0 15px; }
-        
-        /* Video Player Stage */
-        .player-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 6px; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.8); margin-bottom: 25px; border: 1px solid #222634; }
+        .player-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; border-radius: 6px; overflow: hidden; margin-bottom: 25px; border: 1px solid #222634; }
         iframe { width: 100%; height: 100%; border: 0; }
         
-        .section-title { font-size: 18px; font-weight: 700; margin-bottom: 15px; border-left: 4px solid #e50914; padding-left: 10px; text-transform: uppercase; letter-spacing: 0.5px; }
-        
-        /* Catalog Grid Matching Original UI */
+        .section-title { font-size: 18px; font-weight: 700; margin-bottom: 15px; border-left: 4px solid #e50914; padding-left: 10px; text-transform: uppercase; }
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; }
-        .card { background: #151821; border-radius: 6px; overflow: hidden; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; border: 1px solid #1e2230; position: relative; }
-        .card:hover { transform: translateY(-4px); box-shadow: 0 6px 15px rgba(229, 9, 20, 0.3); border-color: #e50914; }
+        .card { background: #151821; border-radius: 6px; overflow: hidden; cursor: pointer; border: 1px solid #1e2230; }
         .card img { width: 100%; height: 230px; object-fit: cover; display: block; }
         .card-body { padding: 10px; }
-        .card-title { font-size: 13px; font-weight: 600; color: #fff; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; height: 36px; line-height: 1.3; }
-        
-        @media (max-width: 600px) {
-            .grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
-            .card img { height: 200px; }
-            nav { display: none; }
-        }
+        .card-title { font-size: 13px; font-weight: 600; color: #fff; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis; height: 36px; }
     </style>
 </head>
 <body>
 
     <header>
         <a href="/" class="logo">LUCIFER <span>DONGHUA</span></a>
-        <nav>
-            <a href="#" class="active">Home</a>
-            <a href="#">Donghua List</a>
-            <a href="#">Popular</a>
-            <a href="#">Ongoing</a>
-            <a href="#">Completed</a>
-        </nav>
     </header>
 
     <div class="container">
         <div class="player-wrapper">
-            <iframe id="embed-player" src="about:blank" allowfullscreen></iframe>
+            <iframe id="embed-player" src="about:blank" allowfullscreen allow="autoplay; encrypted-media"></iframe>
         </div>
 
         <div class="section-title">Latest Released Episodes</div>
@@ -65,10 +41,10 @@
 
     <script>
         async function loadStream(url) {
-            const res = await fetch('/api/embed?url=' + encodeURIComponent(url));
+            const res = await fetch('/api/resolve?url=' + encodeURIComponent(url));
             const data = await res.json();
-            if(data.embed) {
-                document.getElementById('embed-player').src = data.embed;
+            if (data.stream) {
+                document.getElementById('embed-player').src = data.stream;
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
@@ -80,7 +56,7 @@
             grid.innerHTML = '';
 
             data.forEach((item, index) => {
-                if(index === 0) {
+                if (index === 0) {
                     loadStream(item.url);
                 }
 

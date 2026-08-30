@@ -1,4 +1,5 @@
 import os
+import re
 import requests
 from bs4 import BeautifulSoup
 from flask import Flask, jsonify, request
@@ -6,7 +7,8 @@ from flask import Flask, jsonify, request
 app = Flask(__name__, static_folder='public', static_url_path='')
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36"
+    "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36",
+    "Referer": "https://luciferdonghua.in/"
 }
 
 @app.route('/')
@@ -46,6 +48,44 @@ def get_latest():
         print("Backend Fetch Error:", e)
         
     return jsonify(items)
+
+@app.route('/api/resolve')
+def resolve_stream():
+    page_url = request.args.get('url')
+    if not page_url:
+        return jsonify({"stream": ""})
+    
+    try:
+        res = requests.get(page_url, headers=HEADERS, timeout=10)
+        soup = BeautifulSoup(res.text, 'html.parser')
+        
+        # Search for video player iframes or embedded player sources
+        iframes = soup.find_all('iframe')
+        for iframe in iframes:
+            src = iframe.get('src', '')
+            if src and ('player' in src or 'embed' in src or 'dood' in src or 'stream' in src or 'vk' in src):
+                if src.startswith('//'):
+                    src = 'https:' + src
+                return jsonify({"stream": src})
+        
+        # Regex search for video sources in scripts if iframe is dynamically rendered
+        scripts = soup.find_all('script')
+        for script in scripts:
+            if script.string:
+                match = re.search(r'https?://[^\s"\'<>]+(?:\.m3u8|\.mp4)', script.string)
+                if match:
+                    return jsonify({"stream": match.group(0)})
+
+        if iframes and iframes[0].get('src'):
+            src = iframes[0].get('src')
+            if src.startswith('//'):
+                src = 'https:' + src
+            return jsonify({"stream": src})
+
+    except Exception as e:
+        print("Resolver error:", e)
+        
+    return jsonify({"stream": page_url})
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
