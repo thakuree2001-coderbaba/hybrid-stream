@@ -31,7 +31,7 @@ LAYOUT = """
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
         body { background-color: var(--bg-color); color: var(--text-color); padding-bottom: 70px; }
 
-        /* Top Header */
+        /* Header */
         header { background: #12141d; height: 55px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; position: sticky; top: 0; z-index: 1000; }
         .menu-btn { background: none; border: none; color: #fff; font-size: 20px; cursor: pointer; }
         .logo { font-size: 18px; font-weight: 900; color: #fff; text-decoration: none; letter-spacing: 0.5px; }
@@ -39,7 +39,7 @@ LAYOUT = """
         .header-actions { display: flex; gap: 15px; align-items: center; }
         .login-btn { background: var(--accent-red); color: #fff; border: none; padding: 4px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; text-decoration: none; }
 
-        /* Premium Banner */
+        /* Banner */
         .premium-box { background: linear-gradient(135deg, #1d080a 0%, #3a0d11 100%); border: 1px solid var(--accent-red); border-radius: 8px; margin: 12px 15px; padding: 12px; position: relative; }
         .premium-title { font-size: 14px; font-weight: 800; color: #fff; display: flex; align-items: center; gap: 6px; }
         .premium-sub { font-size: 11px; color: #aaa; margin: 4px 0 8px; }
@@ -47,14 +47,14 @@ LAYOUT = """
         .pill { background: rgba(229, 9, 20, 0.2); color: #ff6b72; font-size: 10px; padding: 2px 6px; border-radius: 3px; border: 1px solid rgba(229, 9, 20, 0.4); }
         .premium-btn { background: var(--accent-red); color: #fff; border: none; width: 100%; padding: 8px; border-radius: 4px; font-weight: bold; font-size: 12px; text-align: center; text-decoration: none; display: block; }
 
-        /* Sidebar Navigation Drawer */
+        /* Drawer */
         .drawer-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 2000; display: none; }
         .drawer { position: fixed; top: 0; left: -260px; width: 260px; height: 100%; background: #12141d; z-index: 2001; transition: left 0.3s ease; border-right: 1px solid var(--border-color); padding-top: 15px; }
         .drawer.open { left: 0; }
         .drawer-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: #ccc; text-decoration: none; font-size: 14px; border-bottom: 1px solid rgba(255,255,255,0.03); }
         .drawer-item i { width: 20px; color: var(--accent-red); }
 
-        /* Compact Grid Cards */
+        /* Card Grid */
         .grid-3 { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; padding: 0 12px; }
         .card { background: var(--card-bg); border-radius: 6px; overflow: hidden; text-decoration: none; position: relative; display: block; border: 1px solid var(--border-color); }
         .card-img-wrap { position: relative; width: 100%; padding-top: 140%; }
@@ -63,41 +63,31 @@ LAYOUT = """
         .badge-ep { position: absolute; bottom: 4px; left: 4px; background: var(--accent-red); color: #fff; font-size: 9px; font-weight: bold; padding: 1px 5px; border-radius: 2px; }
         .card-title { font-size: 11px; font-weight: 600; color: #fff; padding: 6px 4px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 32px; }
 
-        /* Section Header */
-        .section-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 12px 10px; }
-        .section-title { font-size: 14px; font-weight: 800; color: #fff; border-left: 3px solid var(--accent-red); padding-left: 8px; text-transform: uppercase; }
-
-        /* Player & Server Selection Elements */
+        /* Video Player & Watch Components */
         .player-container { width: 100%; aspect-ratio: 16/9; background: #000; }
         iframe { width: 100%; height: 100%; border: 0; }
         .server-box { background: #12141d; border: 1px solid var(--border-color); margin: 12px; padding: 10px; border-radius: 6px; }
         .server-title { font-size: 11px; color: #888; text-transform: uppercase; margin-bottom: 8px; font-weight: bold; }
         .server-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 6px; }
-        .server-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: #fff; padding: 8px; font-size: 11px; border-radius: 4px; text-align: center; cursor: pointer; text-decoration: none; display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+        .server-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: #fff; padding: 8px; font-size: 11px; border-radius: 4px; text-align: center; text-decoration: none; display: block; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
         .server-btn.active { border-color: var(--accent-red); color: var(--accent-red); }
 
-        /* Info Box */
         .warning-box { background: rgba(229, 9, 20, 0.1); border: 1px solid var(--accent-red); border-radius: 6px; padding: 10px; margin: 12px; font-size: 11px; color: #ddd; line-height: 1.4; }
         .warning-box i { color: #ffb400; margin-right: 4px; }
 
-        /* Metadata & Details Section */
         .details-container { padding: 12px; background: #12141d; margin: 12px; border-radius: 6px; border: 1px solid var(--border-color); }
-        .meta-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; font-size: 11px; margin-bottom: 12px; color: #aaa; }
-        .meta-grid span { color: #fff; font-weight: 600; }
-        .tag-cloud { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0; }
-        .genre-tag { background: var(--accent-red); color: #fff; font-size: 10px; padding: 3px 8px; border-radius: 3px; text-decoration: none; }
         .synopsis { font-size: 12px; color: #ccc; line-height: 1.5; margin-top: 10px; }
 
-        /* List Episode Selectors */
         .ep-list-container { padding: 0 12px; margin-bottom: 15px; }
-        .ep-search { width: 100%; background: #12141d; border: 1px solid var(--border-color); color: #fff; padding: 8px 12px; border-radius: 4px; font-size: 12px; margin-bottom: 10px; }
         .ep-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
         .ep-btn { background: var(--card-bg); border: 1px solid var(--border-color); padding: 8px; border-radius: 4px; text-align: center; text-decoration: none; display: block; }
         .ep-btn.watching { border-color: var(--accent-red); }
         .ep-num { font-size: 11px; font-weight: bold; color: var(--accent-red); }
-        .ep-date { font-size: 9px; color: #777; margin-top: 2px; }
 
-        /* Bottom Fixed Navigation Bar */
+        .section-header { display: flex; align-items: center; justify-content: space-between; padding: 15px 12px 10px; }
+        .section-title { font-size: 14px; font-weight: 800; color: #fff; border-left: 3px solid var(--accent-red); padding-left: 8px; text-transform: uppercase; }
+
+        /* Bottom Nav */
         .bottom-nav { position: fixed; bottom: 0; left: 0; right: 0; height: 55px; background: #12141d; border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 1000; }
         .nav-item { display: flex; flex-direction: column; align-items: center; color: #777; text-decoration: none; font-size: 10px; gap: 3px; }
         .nav-item i { font-size: 16px; }
@@ -210,43 +200,66 @@ def index():
 
 @app.route('/watch')
 def watch():
-    target_url = request.args.get('url')
+    target_url = request.args.get('url', '')
     embed_src = ""
     title = "Watch Donghua"
-    synopsis = "No synopsis available."
-    genres = ["Action", "Adventure", "Fantasy", "Martial Arts"]
+    synopsis = ""
+    episodes_html = ""
     
-    try:
-        res = requests.get(target_url, headers=HEADERS, timeout=10)
-        soup = BeautifulSoup(res.text, 'html.parser')
-        
-        h1 = soup.find('h1')
-        if h1:
-            title = h1.get_text(strip=True)
+    if target_url:
+        try:
+            res = requests.get(target_url, headers=HEADERS, timeout=10)
+            soup = BeautifulSoup(res.text, 'html.parser')
             
-        iframe = soup.find('iframe')
-        if iframe and iframe.get('src'):
-            embed_src = iframe.get('src')
-            if embed_src.startswith('//'):
-                embed_src = 'https:' + embed_src
+            # Title
+            h1 = soup.find('h1')
+            if h1:
+                title = h1.get_text(strip=True)
+                
+            # Embed Player
+            iframe = soup.find('iframe')
+            if iframe and iframe.get('src'):
+                embed_src = iframe.get('src')
+                if embed_src.startswith('//'):
+                    embed_src = 'https:' + embed_src
 
-        desc = soup.find('div', class_='entry-content') or soup.find('p')
-        if desc:
-            synopsis = desc.get_text(strip=True)
+            # Description / Synopsis
+            desc = soup.find('div', class_='entry-content') or soup.find('div', class_='desc')
+            if desc:
+                synopsis = desc.get_text(strip=True)
 
-    except Exception as e:
-        print("Error fetching stream details:", e)
+            # Episodes Extractor
+            ep_links = soup.find_all('a', href=re.compile(r'/episode|/renagade-immortal|/watch'))
+            seen = set()
+            for ep in ep_links[:12]:
+                ep_url = ep.get('href')
+                ep_text = ep.get_text(strip=True)
+                if ep_url and ep_url not in seen and 'Episode' in ep_text:
+                    seen.add(ep_url)
+                    episodes_html += f'''
+                    <a href="/watch?url={ep_url}" class="ep-btn">
+                        <div class="ep-num">{ep_text}</div>
+                    </a>
+                    '''
 
-    genre_tags = "".join([f'<a href="/genres" class="genre-tag">{g}</a>' for g in genres])
+        except Exception as e:
+            print("Extraction error:", e)
 
-    # Dynamic video servers & detailed episode selection layout
+    # Fallback player display if iframe is absent
+    player_element = f'<iframe src="{embed_src}" allowfullscreen allow="autoplay; encrypted-media"></iframe>' if embed_src else '<div style="display:flex; justify-content:center; align-items:center; height:100%; color:#aaa; font-size:12px;">Streaming Embed Source Loading...</div>'
+
+    if not episodes_html:
+        episodes_html = '''
+        <a href="#" class="ep-btn watching"><div class="ep-num">Current Ep</div></a>
+        '''
+
     content = f'''
         <div class="player-container">
-            <iframe src="{embed_src}" allowfullscreen allow="autoplay; encrypted-media"></iframe>
+            {player_element}
         </div>
 
         <div class="warning-box">
-            <i class="fa-solid fa-triangle-exclamation"></i> <strong>Notice:</strong> These days, Dailymotion 4K is experiencing heavy lagging issues. We have added alternative Rumble servers supporting 4K playback.
+            <i class="fa-solid fa-triangle-exclamation"></i> <strong>Notice:</strong> Dailymotion 4K is experiencing heavy lagging. Rumble 4K servers are active.
         </div>
 
         <div class="server-box">
@@ -260,79 +273,28 @@ def watch():
         </div>
 
         <div class="section-header">
-            <div class="section-title">All Episodes</div>
+            <div class="section-title">{title}</div>
         </div>
 
         <div class="ep-list-container">
-            <input type="text" class="ep-search" placeholder="Search episode number... (e.g. 153 or 238)">
             <div class="ep-grid">
-                <a href="#" class="ep-btn watching">
-                    <div class="ep-num">Episode 156</div>
-                    <div class="ep-date">Aug 30, 2026</div>
-                </a>
-                <a href="#" class="ep-btn">
-                    <div class="ep-num">Episode 155</div>
-                    <div class="ep-date">Aug 23, 2026</div>
-                </a>
-                <a href="#" class="ep-btn">
-                    <div class="ep-num">Episode 154</div>
-                    <div class="ep-date">Aug 16, 2026</div>
-                </a>
-                <a href="#" class="ep-btn">
-                    <div class="ep-num">Episode 153</div>
-                    <div class="ep-date">Aug 9, 2026</div>
-                </a>
-                <a href="#" class="ep-btn">
-                    <div class="ep-num">Episode 152</div>
-                    <div class="ep-date">Aug 2, 2026</div>
-                </a>
-                <a href="#" class="ep-btn">
-                    <div class="ep-num">Episode 151</div>
-                    <div class="ep-date">Jul 26, 2026</div>
-                </a>
+                {episodes_html}
             </div>
         </div>
 
         <div class="details-container">
-            <h2 style="font-size:14px; font-weight:bold; color:#fff; margin-bottom:10px;">{title}</h2>
-            <div class="meta-grid">
-                <div>Status: <span>Ongoing</span></div>
-                <div>Network: <span>Tencent Animation</span></div>
-                <div>Studio: <span>BUILD DREAM</span></div>
-                <div>Released: <span>Sep 25, 2023</span></div>
-                <div>Duration: <span>18 min. per ep.</span></div>
-                <div>Season: <span>1</span></div>
-                <div>Country: <span>China</span></div>
-                <div>Type: <span>DONGHUA</span></div>
-            </div>
-            <div class="tag-cloud">{genre_tags}</div>
-            <div class="synopsis">{synopsis}</div>
+            <h3 style="font-size:13px; font-weight:bold; color:#fff; margin-bottom:6px;">Synopsis</h3>
+            <div class="synopsis">{synopsis if synopsis else "Enjoy streaming " + title + " in 4K resolution on Lucifer Donghua."}</div>
         </div>
     '''
     return render_template_string(LAYOUT, title=title, content=content, page="anime")
 
 @app.route('/genres')
 def genres():
-    genres_list = [
-        ("Action", 315), ("Adult Cast", 1), ("Adventure", 279), ("Comedy", 106),
-        ("Cultivation", 1), ("Demons", 110), ("Drama", 11), ("Emotional", 2),
-        ("Fantasy", 294), ("Gourmet", 1), ("Harem", 22), ("Historical", 137),
-        ("Horror", 3), ("Isekai", 24), ("Magic", 13), ("Martial Art", 144),
-        ("Martial Arts", 56), ("Mystery", 2), ("Mythology", 6), ("Post-Apocalyptic", 1)
-    ]
-    
-    boxes = ""
-    for name, count in genres_list:
-        boxes += f'''
-        <div style="background:#151821; border:1px solid #222634; border-radius:4px; padding:10px; display:flex; justify-content:space-between; align-items:center;">
-            <span style="font-size:12px; font-weight:bold; color:#fff;">{name}</span>
-            <span style="font-size:10px; color:#e50914; background:rgba(229,9,20,0.1); padding:2px 6px; border-radius:3px;">{count}</span>
-        </div>
-        '''
-        
+    cards = fetch_cards("https://luciferdonghua.in/genres/")
     content = f'''
         <div class="section-header"><div class="section-title">Genres</div></div>
-        <div style="display:grid; grid-template-columns: repeat(2, 1fr); gap:8px; padding:0 12px;">{boxes}</div>
+        <div class="grid-3">{cards}</div>
     '''
     return render_template_string(LAYOUT, title="Genres", content=content, page="anime")
 
@@ -340,7 +302,7 @@ def genres():
 def history():
     content = '''
         <div class="section-header"><div class="section-title">Anime History</div></div>
-        <p style="padding: 12px; font-size:12px; color:#aaa;">This is your history, you can select episode or anime to continue watching where you left off.</p>
+        <p style="padding: 12px; font-size:12px; color:#aaa;">Select any anime to continue watching where you left off.</p>
     '''
     return render_template_string(LAYOUT, title="History", content=content, page="saved")
 
