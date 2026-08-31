@@ -11,56 +11,62 @@ HEADERS = {
     "Referer": f"{BASE_URL}/"
 }
 
-def fetch_homepage_items():
+def scrape_grid(url):
     items = []
     try:
-        resp = requests.get(BASE_URL, headers=HEADERS, timeout=8)
+        resp = requests.get(url, headers=HEADERS, timeout=8)
         soup = BeautifulSoup(resp.text, 'html.parser')
-        
-        articles = soup.find_all('article')
-        for art in articles:
+        for art in soup.find_all('article'):
             a_tag = art.find('a', href=True)
             img_tag = art.find('img')
-            
             if a_tag:
-                link = a_tag['href']
-                title = a_tag.get('title') or a_tag.text.strip() or "Donghua Episode"
-                img = img_tag.get('src') or img_tag.get('data-src') if img_tag else "https://via.placeholder.com/150x225?text=No+Cover"
-                
                 items.append({
-                    "title": title,
-                    "link": link,
-                    "img": img
+                    "title": a_tag.get('title') or a_tag.text.strip() or "Donghua Episode",
+                    "link": a_tag['href'],
+                    "img": img_tag.get('src') or img_tag.get('data-src') if img_tag else "https://via.placeholder.com/150x225?text=No+Cover"
                 })
     except Exception as e:
-        print(f"Error scraping catalog: {e}")
+        print(f"Scraper Error: {e}")
     return items
 
-def extract_stream_from_post(post_url):
+def extract_stream(post_url):
     try:
         resp = requests.get(post_url, headers=HEADERS, timeout=8)
         soup = BeautifulSoup(resp.text, 'html.parser')
-        
         for iframe in soup.find_all('iframe'):
             src = iframe.get('src', '')
             if 'facebook' not in src and 'google' not in src and 'nbl' not in src:
                 return src if src.startswith('http') else f"https:{src}"
     except Exception as e:
-        print(f"Error extracting video stream: {e}")
+        print(f"Stream Error: {e}")
     return "about:blank"
 
 @app.route('/')
 def home():
-    items = fetch_homepage_items()
-    active_stream = extract_stream_from_post(items[0]['link']) if items else None
-    return render_template('index.html', items=items, active_stream=active_stream)
+    items = scrape_grid(BASE_URL)
+    return render_template('index.html', items=items)
+
+@app.route('/catalog')
+def catalog():
+    items = scrape_grid(BASE_URL)
+    return render_template('catalog.html', items=items)
 
 @app.route('/watch')
 def watch():
-    target_url = request.args.get('url')
-    items = fetch_homepage_items()
-    active_stream = extract_stream_from_post(target_url) if target_url else None
-    return render_template('index.html', items=items, active_stream=active_stream)
+    target_url = request.args.get('url', '')
+    stream_url = extract_stream(target_url) if target_url else "about:blank"
+    return render_template('watch.html', stream_url=stream_url)
+
+@app.route('/search')
+def search():
+    query = request.args.get('q', '')
+    search_url = f"{BASE_URL}/?s={query}" if query else BASE_URL
+    items = scrape_grid(search_url)
+    return render_template('catalog.html', items=items, query=query)
+
+@app.route('/about')
+def about():
+    return render_template('about.html')
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))

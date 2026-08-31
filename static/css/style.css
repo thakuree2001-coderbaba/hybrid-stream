@@ -1,15 +1,46 @@
+:root {
+    --bg-main: #0a0c10;
+    --bg-card: #121620;
+    --bg-nav: #0e1118;
+    --accent: #e50914;
+    --text-primary: #ffffff;
+    --text-muted: #9aa0a6;
+    --border-color: #202634;
+}
+
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: #08090d; color: #fff; font-family: system-ui, sans-serif; padding-bottom: 50px; }
-header { background: #0e1017; padding: 15px; border-bottom: 1px solid #202431; text-align: center; }
-.logo { font-weight: 900; color: #fff; text-decoration: none; font-size: 1.3rem; }
-.logo span { color: #e50914; }
+body { background: var(--bg-main); color: var(--text-primary); font-family: system-ui, sans-serif; }
 
-.container { padding: 15px; }
-.player-wrapper { width: 100%; aspect-ratio: 16/9; background: #000; margin-bottom: 20px; border-radius: 8px; overflow: hidden; }
-iframe { width: 100%; height: 100%; border: none; }
+.navbar { background: var(--bg-nav); border-bottom: 1px solid var(--border-color); padding: 12px 20px; }
+.nav-container { display: flex; justify-content: space-between; align-items: center; max-width: 1200px; margin: 0 auto; flex-wrap: wrap; gap: 10px; }
+.brand-logo { color: #fff; font-size: 1.4rem; font-weight: 800; text-decoration: none; }
+.brand-logo span { color: var(--accent); }
 
-.section-title { font-size: 1.1rem; margin-bottom: 12px; color: #e50914; text-transform: uppercase; letter-spacing: 1px; }
-.grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
-.card { background: #12151e; border: 1px solid #202431; border-radius: 6px; overflow: hidden; text-decoration: none; color: #fff; display: flex; flex-direction: column; }
-.card img { width: 100%; aspect-ratio: 2/3; object-fit: cover; }
-.card-title { padding: 8px; font-size: 0.8rem; line-height: 1.2; text-align: center; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.search-bar { display: flex; flex: 1; max-width: 400px; margin: 0 15px; }
+.search-bar input { width: 100%; padding: 8px 12px; background: #1a1f2c; border: 1px solid var(--border-color); color: #fff; border-radius: 4px 0 0 4px; outline: none; }
+.search-bar button { padding: 8px 15px; background: var(--accent); border: none; color: #fff; border-radius: 0 4px 4px 0; cursor: pointer; }
+
+.nav-links a { color: var(--text-muted); text-decoration: none; margin-left: 15px; }
+
+.main-content { max-width: 1200px; margin: 20px auto; padding: 0 15px; min-height: 80vh; }
+.hero-banner { background: #181d2a; padding: 25px; border-radius: 8px; margin-bottom: 25px; text-align: center; }
+
+.section-heading { font-size: 1.2rem; margin-bottom: 15px; color: var(--accent); border-bottom: 2px solid var(--border-color); padding-bottom: 8px; }
+.card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+.donghua-card { background: var(--bg-card); border: 1px solid var(--border-color); border-radius: 6px; overflow: hidden; display: flex; flex-direction: column; }
+
+.img-wrapper { position: relative; aspect-ratio: 2/3; width: 100%; overflow: hidden; }
+.img-wrapper img { width: 100%; height: 100%; object-fit: cover; }
+.play-overlay { position: absolute; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; opacity: 0; color: var(--accent); font-size: 2rem; text-decoration: none; }
+.img-wrapper:hover .play-overlay { opacity: 1; }
+
+.card-info { padding: 8px; flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+.card-info h3 { font-size: 0.8rem; height: 2.6em; overflow: hidden; color: #eee; }
+.watch-btn { display: block; text-align: center; background: var(--accent); color: #fff; text-decoration: none; padding: 5px; border-radius: 4px; font-size: 0.75rem; margin-top: 6px; }
+
+.iframe-responsive { position: relative; padding-bottom: 56.25%; height: 0; overflow: hidden; background: #000; border-radius: 8px; }
+.iframe-responsive iframe { position: absolute; top:0; left: 0; width: 100%; height: 100%; border: 0; }
+.player-controls { margin-top: 15px; background: var(--bg-card); padding: 15px; border-radius: 8px; }
+.srv-btn { background: #1a1f2c; border: 1px solid var(--border-color); color: #fff; padding: 6px 12px; border-radius: 4px; cursor: pointer; }
+
+.footer { text-align: center; padding: 20px; border-top: 1px solid var(--border-color); color: var(--text-muted); font-size: 0.8rem; margin-top: 40px; }

@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Lucifer Donghua Portal{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <a href="/" class="brand-logo"><i class="fa-solid fa-dragon"></i> LUCIFER <span>DONGHUA</span></a>
+            <form action="/search" method="GET" class="search-bar">
+                <input type="text" name="q" placeholder="Search donghua..." value="{{ query if query else '' }}" required>
+                <button type="submit"><i class="fa-solid fa-magnifying-glass"></i></button>
+            </form>
+            <div class="nav-links">
+                <a href="/"><i class="fa-solid fa-house"></i> Home</a>
+                <a href="/catalog"><i class="fa-solid fa-list"></i> Catalog</a>
+                <a href="/about"><i class="fa-solid fa-shield-halved"></i> DMCA</a>
+            </div>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="footer">
+        <p>&copy; 2026 Lucifer Donghua Engine. Powered by Flask & Termux Architecture.</p>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html>

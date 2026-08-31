@@ -1,14 +1,9 @@
 {% extends 'base.html' %}
-{% block title %}Home - Lucifer Donghua{% endblock %}
+{% block title %}Catalog - Lucifer Donghua{% endblock %}
 
 {% block content %}
-<section class="hero-banner">
-    <h1>Watch High Quality Donghua</h1>
-    <p>Fast streaming, updated daily from primary sources.</p>
-</section>
-
 <section class="section">
-    <h2 class="section-heading"><i class="fa-solid fa-fire"></i> Recent Releases</h2>
+    <h2 class="section-heading"><i class="fa-solid fa-film"></i> Complete Library</h2>
     <div class="card-grid">
         {% for item in items %}
         <div class="donghua-card">
@@ -18,7 +13,6 @@
             </div>
             <div class="card-info">
                 <h3>{{ item.title }}</h3>
-                <a href="/watch?url={{ item.link }}" class="watch-btn">Watch Now</a>
             </div>
         </div>
         {% endfor %}

@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block title %}Streaming - Lucifer Donghua{% endblock %}
+
+{% block content %}
+<div class="watch-container">
+    <div class="player-box">
+        <div class="iframe-responsive">
+            <iframe id="video-frame" src="{{ stream_url }}" allowfullscreen referrerpolicy="no-referrer"></iframe>
+        </div>
+        <div class="player-controls">
+            <h2>Episode Player</h2>
+            <div class="server-switchers">
+                <button class="srv-btn active" onclick="reloadPlayer()">Reload Stream</button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
