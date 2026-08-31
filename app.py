@@ -1,21 +1,15 @@
 import os
-import re
-from urllib.parse import urljoin, quote_plus
 import requests
 from bs4 import BeautifulSoup
-from flask import Flask, request, render_template_string, abort, Response
+from flask import Flask, render_template_string
 
 app = Flask(__name__)
-app.config["MAX_CONTENT_LENGTH"] = 2 * 1024 * 1024
 
 BASE_URL = "https://luciferdonghua.in"
 HEADERS = {
     "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Chrome/124.0.0.0 Safari/537.36",
     "Referer": f"{BASE_URL}/"
 }
-
-session = requests.Session()
-session.headers.update(HEADERS)
 
 LAYOUT = """
 <!DOCTYPE html>
@@ -44,9 +38,22 @@ LAYOUT = """
 </html>
 """
 
+def get_latest_stream():
+    try:
+        resp = requests.get(BASE_URL, headers=HEADERS, timeout=8)
+        soup = BeautifulSoup(resp.text, 'html.parser')
+        iframe = soup.find('iframe')
+        if iframe and iframe.get('src'):
+            src = iframe['src']
+            return src if src.startswith('http') else f"https:{src}"
+    except Exception as e:
+        print(f"Scraping error: {e}")
+    return "about:blank"
+
 @app.route('/')
 def home():
-    return render_template_string(LAYOUT, stream_url="https://rumble.com/embed/v238xxx/")
+    stream_url = get_latest_stream()
+    return render_template_string(LAYOUT, stream_url=stream_url)
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 5000))
